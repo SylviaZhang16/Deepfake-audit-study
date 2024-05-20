@@ -1,5 +1,7 @@
 # Deepfake Audit Study
 
+Feel free to update your work within the platform folder
+
 ## Scraping Instructions
 
 This part contains tools for scraping post metrics from Reddit and Twitter. Follow the instructions below to set up and use the scrapers.
@@ -13,8 +15,8 @@ This part contains tools for scraping post metrics from Reddit and Twitter. Foll
    ```bash
    python3 twitter-scraper.py
    ```
-3. Input your Reddit credentials when prompted. Alternatively, you can copy and modify the script to use your own account secrets, but ensure you protect your information.
-4. Then The scrapers will run in headless mode to minimize resource usage. The resulting metrics will be saved in the `/data` subfolder, named by the username (Reddit) or the post id (Twitter).
+3. Input your account credentials and post url when prompted. Alternatively, you can copy and modify the script to use your own account secrets, but ensure you protect your information.
+4. Then the scrapers will run in headless mode to minimize resource usage. The resulting metrics will be saved in the `/data` subfolder, named by the username (Reddit) or the post id (Twitter).
 
 ## Notes
 
