@@ -1,5 +1,6 @@
 import time
 import json
+import csv
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
@@ -33,18 +34,18 @@ def get_twitter_post_metrics(post_url):
         username_input_xpath = '//*[@id="layers"]/div/div/div/div/div/div/div[2]/div[2]/div/div/div[2]/div[2]/div[1]/div/div[2]/label/div/div[2]/div/input'
         password_input_xpath = '//*[@id="layers"]/div/div/div/div/div/div/div[2]/div[2]/div/div/div[2]/div[2]/div[1]/div/div/div[3]/div/label/div/div[2]/div[1]/input'
 
-        # Input email and press Enter
         WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.XPATH, email_input_xpath))).send_keys(email)
         driver.find_element(By.XPATH, email_input_xpath).send_keys(Keys.RETURN)
         time.sleep(2)
 
-        # somtimes the twitter will ask the username or phone number again because it's an unusaul login
-        WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.XPATH, username_input_xpath))).send_keys(username)
-        driver.find_element(By.XPATH, username_input_xpath).send_keys(Keys.RETURN)
-        time.sleep(2)
+        try:
+            username_element = WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.XPATH, username_input_xpath)))
+            username_element.send_keys(username)
+            driver.find_element(By.XPATH, username_input_xpath).send_keys(Keys.RETURN)
+            time.sleep(2)
+        except:
+            print("Username input field not found. Skipping this step.")
 
-
-        # Input password and press Enter
         WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.XPATH, password_input_xpath))).send_keys(password)
         driver.find_element(By.XPATH, password_input_xpath).send_keys(Keys.RETURN)
         time.sleep(5)
@@ -58,7 +59,6 @@ def get_twitter_post_metrics(post_url):
         post_id = post_url.split("/")[5]
 
         
-        # scraper for unauthorized users 
         # view_count_xpath = '//*[@id="react-root"]/div/div/div[2]/main/div/div/div/div/div/section/div/div/div[1]/div/div/article/div/div/div[3]/div[4]/div/div[1]/div/div[3]/span/div/span/span/span'  
         # reposts_xpath = '//div[@role="group"]//a[contains(@href, "retweets")]/div/span/span/span'
         # quotes_xpath = '//div[@role="group"]//a[contains(@href, "retweets/with_comments")]/div/span/span/span'
@@ -85,17 +85,21 @@ def get_twitter_post_metrics(post_url):
         likes_number = metrics.get('likes', '0')
 
         post_metrics = {
-            "user": user,
-            "post_id": post_id,
-            "view_count": view_count,
-            "quote_count": quotes_number,
-            "repost_count": reposts_number,
-            "like_count": likes_number
+            "authorID": user,
+            "tweetID": post_id,
+            "numViews": view_count,
+            "numComments": quotes_number,
+            "numRetweets": reposts_number,
+            "numLikes": likes_number
         }
 
-        filename = f"data/{post_id}.json"
-        with open(filename, 'w') as f:
-            json.dump(post_metrics, f, indent=4)
+        filename = f"data/{post_id}.csv"
+
+        with open(filename, 'w', newline='') as f:
+            writer = csv.DictWriter(f, fieldnames=post_metrics.keys())
+
+            writer.writeheader()
+            writer.writerow(post_metrics)
 
         return post_metrics
 
@@ -108,10 +112,15 @@ def get_twitter_post_metrics(post_url):
 if __name__ == "__main__":
 
     # TODO: read credentials from a csv file / environment variables
-    email = input("Enter Twitter email: ")
-    username = input("Enter Twitter username: ")
-    password = input("Enter Twitter password: ")
-    post_url = input("Enter post URL: ")
+    # email = input("Enter Twitter email: ")
+    # username = input("Enter Twitter username: ")
+    # password = input("Enter Twitter password: ")
+    # post_url = input("Enter post URL: ")
+
+    email = 'sylviaboom16@gmail.com'
+    username = 'BoomSylvia'
+    password = 'test12345'
+    post_url = 'https://x.com/sounderatheart/status/1792050822890831878' 
 
     # url for testing
     # post_url = 'https://x.com/sounderatheart/status/1792050822890831878'  

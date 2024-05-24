@@ -1,5 +1,6 @@
 import time
 import json
+import csv
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
@@ -60,12 +61,12 @@ def get_reddit_posts_metrics(username, password):
                 shares = tracker_element.find_element(By.XPATH, shares_xpath).text
 
                 post_data = {
-                    "post_id": post_id,
-                    "subreddit_id": subreddit_id,
-                    "views": views,
-                    "upvote_rate": upvote_rate,
-                    "comments": comments,
-                    "shares": shares
+                    "postID": post_id,
+                    "subredditId": subreddit_id,
+                    "numViews": views,
+                    "numUpvotes": upvote_rate,
+                    "numComments": comments,
+                    "numXPosts": shares
                 }
 
                 posts_data.append(post_data)
@@ -73,8 +74,16 @@ def get_reddit_posts_metrics(username, password):
             except Exception as e:
                 print(f"An error occurred while processing a post: {e}")
 
-        with open(f'data/{username}.json', 'w') as f:
-            json.dump(posts_data, f, indent=4)
+        fieldnames = ['postID', 'subredditId', 'numViews', 'numUpvotes', 'numComments', 'numXPosts']
+
+        # Writing to CSV
+        with open(f'data/{username}.csv', 'w', newline='') as f:
+            writer = csv.DictWriter(f, fieldnames=fieldnames)
+
+            writer.writeheader()
+            
+            for post in posts_data:
+                writer.writerow(post)
 
         return posts_data
 
@@ -86,8 +95,12 @@ def get_reddit_posts_metrics(username, password):
 
 if __name__ == "__main__":
     # TODO:read crencidentials from a csv file
-    username = input("Enter Reddit username: ")
-    password = input("Enter Reddit password: ")
+    # username = input("Enter Reddit username: ")
+    # password = input("Enter Reddit password: ")
+
+    username = 'NumerousExpression42' 
+    email = 'sylviaboom16@gmail.com' 
+    password = 'test12345' 
 
     posts_metrics = get_reddit_posts_metrics(username, password)
     if posts_metrics:
