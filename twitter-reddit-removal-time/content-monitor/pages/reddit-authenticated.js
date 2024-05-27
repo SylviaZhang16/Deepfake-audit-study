@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
 
-export default function Home() {
+export default function RedditAuthenticated() {
   const [urls, setUrls] = useState(['']);
   const [logs, setLogs] = useState({});
   const [isValidUrls, setIsValidUrls] = useState([true]);
@@ -167,9 +167,9 @@ const fetchMetrics = async () => {
         <h1>Content Monitor</h1>
         <nav>
           <ul>
-          <li><Link href="/">Reddit (Login)</Link></li>
+            <li><Link href="/reddit-authenticated">Reddit (Login)</Link></li>
             <li><Link href="/reddit-original">Reddit</Link></li>
-            <li><Link href="/twitter">Twitter</Link></li>
+            <li><a href="#Twitter">Twitter</a></li>
           </ul>
         </nav>
       </header>
@@ -234,14 +234,13 @@ const fetchMetrics = async () => {
                 {metrics && metrics.find(m => m.postID === postDetails[url].post_id) ? (
                   <div>
                     <h3>Metrics</h3>
-                    <p><strong>Time of scraping:</strong> {metrics.find(m => m.postID === postDetails[url].post_id).scrapeTime}</p>
                     <p><strong>Views:</strong> {metrics.find(m => m.postID === postDetails[url].post_id).numViews}</p>
                     <p><strong>Upvotes:</strong> {metrics.find(m => m.postID === postDetails[url].post_id).numUpvotes}</p>
                     <p><strong>Comments:</strong> {metrics.find(m => m.postID === postDetails[url].post_id).numComments}</p>
                     <p><strong>XPosts:</strong> {metrics.find(m => m.postID === postDetails[url].post_id).numXPosts}</p>
                   </div>
                 ) : (
-                  <p>This post may not be created by this user.</p>
+                  <p style={color = "red"}>This post may not be created by this user.</p>
                 )}
               </div>
             )}

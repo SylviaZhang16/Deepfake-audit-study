@@ -23,6 +23,7 @@ export default async function handler(req, res) {
     const isDeleted = post.author.name === '[deleted]' || post.removed_by_category !== null || post.removed;
 
     const postDetails = {
+      post_id: post.id,
       title: post.title,
       author: post.author.name,
       created_utc: post.created_utc,
