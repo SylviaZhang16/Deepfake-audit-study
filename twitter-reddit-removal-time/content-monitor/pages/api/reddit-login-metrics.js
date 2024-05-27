@@ -39,8 +39,36 @@ const scrapeDataForUser = (username, password, callback) => {
   process.on('close', (code) => {
     if (code === 0) {
       try {
-        const metrics = JSON.parse(output);
-        if (callback) callback(null, metrics);
+        const newMetrics = JSON.parse(output);
+        const filePath = path.resolve(`./data/reddit/${username}.json`);
+        let mergedMetrics = newMetrics;
+
+        if (fs.existsSync(filePath)) {
+          const existingData = fs.readFileSync(filePath, 'utf8');
+          const existingMetrics = JSON.parse(existingData);
+
+          // Create a map of existing posts by postID
+          const existingPostsMap = existingMetrics.reduce((map, post) => {
+            map[post.postID] = post;
+            return map;
+          }, {});
+
+          // Merge new metrics with existing metrics
+          mergedMetrics = newMetrics.map((newPost) => {
+            if (existingPostsMap[newPost.postID]) {
+              // Post exists in both new and old data, use new data
+              delete existingPostsMap[newPost.postID];
+              return newPost;
+            }
+            return newPost;
+          });
+
+          // Add remaining old posts that were not in the new data
+          mergedMetrics = mergedMetrics.concat(Object.values(existingPostsMap));
+        }
+
+        fs.writeFileSync(filePath, JSON.stringify(mergedMetrics, null, 2));
+        if (callback) callback(null, mergedMetrics);
       } catch (err) {
         console.error('Error parsing JSON:', err);
         if (callback) callback(err);
@@ -96,8 +124,6 @@ export default function handler(req, res) {
       console.error('Failed to fetch metrics:', err);
       res.status(500).json({ error: 'Failed to fetch metrics', details: err.message });
     } else {
-      const filePath = path.resolve(`./data/reddit/${username}.json`);
-      fs.writeFileSync(filePath, JSON.stringify(metrics, null, 2));
       res.status(200).json({ metrics });
     }
   });
