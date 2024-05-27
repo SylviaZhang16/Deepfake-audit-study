@@ -145,6 +145,27 @@ export default function Home() {
     setIsValidUrls((prev) => [...prev, true]);
   };
 
+  const handleFetchLatestMetrics = async () => {
+    try {
+      const response = await fetch(`/api/fetch-latest-metrics?username=${username}`);
+      if (!response.ok) {
+        throw new Error('Network response was not ok');
+      }
+      const data = await response.json();
+      if (data.error) {
+        setError(data.error);
+        setMetrics([]);
+      } else {
+        setMetrics(data.metrics || []);
+        setError(null);
+      }
+    } catch (error) {
+      console.error('Error fetching latest metrics:', error);
+      setError('Failed to fetch latest metrics');
+      setMetrics([]);
+    }
+  };
+
   useEffect(() => {
     return () => {
       Object.keys(intervalRefs.current).forEach((url) => {
@@ -210,6 +231,8 @@ export default function Home() {
           ))}
           <button type="button" onClick={addUrlField}>Add URL</button>
           <button type="submit">Start Monitoring</button>
+          <p>Post data can be updated automatically in backend. Press the button to read the latest metrics data.</p>
+          <button type="button" onClick={handleFetchLatestMetrics}>Fetch Latest Metrics</button> 
         </form>
 
         {urls.map((url, index) => (
