@@ -8,7 +8,7 @@ export default function handler(req, res) {
   }
 
   const { email, username, password, urls } = req.body;
-  const scriptPath = path.resolve('./pages/api/twitter-scraper.py');
+  const scriptPath = path.resolve('./pages/api/scripts//twitter-scraper.py');
   console.log('Executing script at path:', scriptPath);
 
   const process = spawn('python3', [scriptPath, email, username, password, ...urls]);

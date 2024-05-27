@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import Head from 'next/head';
+import Link from 'next/link';
 
 export default function Twitter() {
   const [urls, setUrls] = useState(['']);
@@ -10,7 +11,7 @@ export default function Twitter() {
   const [email, setEmail] = useState('');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [metrics, setMetrics] = useState(null);
+  const [metrics, setMetrics] = useState([]); 
   const intervalRefs = useRef({});
 
   const validateUrl = (url) => url.includes('.com');
@@ -79,16 +80,16 @@ export default function Twitter() {
         },
         body: JSON.stringify({ email, username, password, urls }),
       });
-
+  
       if (!response.ok) {
         throw new Error('Network response was not ok');
       }
-
+  
       const data = await response.json();
-      console.log('Metrics:', data);
+      console.log('Metrics:', data.metrics);
       if (data.error) {
         setError(data.error);
-        setMetrics(null);
+        setMetrics([]); 
       } else {
         setMetrics(data.metrics);
         setError(null);
@@ -96,7 +97,7 @@ export default function Twitter() {
     } catch (error) {
       console.error('Error fetching metrics:', error);
       setError('Failed to fetch metrics');
-      setMetrics(null);
+      setMetrics([]); 
     }
   };
 
@@ -131,9 +132,9 @@ export default function Twitter() {
         <h1>Content Monitor</h1>
         <nav>
           <ul>
-            <li><a href="/">Reddit</a></li>
-            <li><a href="/redditAuthenticated">Reddit(login)</a></li>
-            <li><a href="/twitter">Twitter</a></li>
+            <li><Link href="/">Reddit (Login)</Link></li>
+            <li><Link href="/reddit-original">Reddit</Link></li>
+            <li><Link href="/twitter">Twitter</Link></li>
           </ul>
         </nav>
       </header>
@@ -190,18 +191,18 @@ export default function Twitter() {
           <button type="button" onClick={addUrlField}>Add URL</button>
           <button type="submit">Start Monitoring</button>
         </form>
-        {metrics.map((metric, index) => (
-          <div key={index} className="metrics">
-            <h2>Metrics for Tweet ID: {metric.tweetID}</h2>
-            <p><strong>Time of scraping:</strong> {metric.scrapeTime}</p>
-            <p><strong>Author ID:</strong> {metric.authorID}</p>
-            <p><strong>Views:</strong> {metric.numViews}</p>
-            <p><strong>Comments:</strong> {metric.numComments}</p>
-            <p><strong>Retweets:</strong> {metric.numRetweets}</p>
-            <p><strong>Likes:</strong> {metric.numLikes}</p>
-          </div>
+        {metrics && metrics.length > 0 && metrics.map((metric, index) => (
+            <div key={index} className="metrics">
+                <h2>Metrics for Tweet ID: {metric.tweetID}</h2>
+                <p><strong>Time of scraping:</strong> {metric.scrapeTime ? metric.scrapeTime : "N/A"}</p>
+                <p><strong>Author ID:</strong> {metric.authorID}</p>
+                <p><strong>Views:</strong> {metric.numViews}</p>
+                <p><strong>Comments:</strong> {metric.numComments}</p>
+                <p><strong>Retweets:</strong> {metric.numRetweets}</p>
+                <p><strong>Likes:</strong> {metric.numLikes}</p>
+            </div>
         ))}
-        {error && <div className="error">{error}</div>}
+        {error && <div className="error">{error.toString()}</div>}
       </main>
       <footer className="footer">
         <p>&copy; 2024 </p>

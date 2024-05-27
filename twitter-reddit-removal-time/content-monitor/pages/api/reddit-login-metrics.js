@@ -8,7 +8,7 @@ export default function handler(req, res) {
   }
 
   const { username, password } = req.body;
-  const scriptPath = path.resolve('./pages/api/reddit-scraper.py');
+  const scriptPath = path.resolve('./pages/api/scripts/reddit-scraper.py');
   console.log('Executing script at path:', scriptPath);
 
   const process = spawn('python3', [scriptPath, username, password]);
