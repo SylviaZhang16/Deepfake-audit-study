@@ -102,39 +102,35 @@ export default function Home() {
   };
 
 
-const fetchMetrics = async () => {
-  setLoading(true); 
-  try {
-    const response = await fetch('/api/reddit-login-metrics', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ username, password }),
-    });
-
-    if (!response.ok) {
-      throw new Error('Network response was not ok');
+  const fetchMetrics = async () => {
+    try {
+      const response = await fetch('/api/reddit-login-metrics', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ username, password }),
+      });
+  
+      if (!response.ok) {
+        throw new Error('Network response was not ok');
+      }
+  
+      const data = await response.json();
+      if (data.error) {
+        setError(data.error);
+        setMetrics([]);
+      } else {
+        setMetrics(data.metrics || []);
+        setError(null);
+      }
+    } catch (error) {
+      console.error('Error fetching metrics:', error);
+      setError('Failed to fetch metrics');
+      setMetrics([]);
     }
-
-    const data = await response.json();
-    console.log('Metrics:', data);
-    if (data.error) {
-      setError(data.error);
-      setMetrics(null);
-    } else {
-      setMetrics(data.metrics);
-      setError(null);
-    }
-  } catch (error) {
-    console.error('Error fetching metrics:', error);
-    setError('Failed to fetch metrics');
-    setMetrics(null);
-  } finally {
-    setLoading(false); 
-  }
-};
-
+  };
+  
 
   const handleUrlChange = (index, value) => {
     setUrls((prev) => {
