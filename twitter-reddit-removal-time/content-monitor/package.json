@@ -13,7 +13,8 @@
     "next": "14.2.3",
     "node-cron": "^3.0.3",
     "react": "^18",
-    "react-dom": "^18"
+    "react-dom": "^18",
+    "snoowrap": "^1.23.0"
   },
   "devDependencies": {
     "eslint": "^8",

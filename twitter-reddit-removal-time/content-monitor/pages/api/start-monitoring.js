@@ -1,6 +1,7 @@
 import { spawn } from 'child_process';
 import path from 'path';
 
+
 let monitorProcess;
 let eventEmitter;
 
@@ -18,7 +19,7 @@ export default function handler(req, res) {
         eventEmitter = null;
       });
 
-      eventEmitter = require('../../../../monitor');
+      eventEmitter = require('../../monitor');
     }
 
     res.setHeader('Content-Type', 'text/event-stream');
