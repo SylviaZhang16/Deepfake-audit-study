@@ -1,17 +1,13 @@
 import { useState, useEffect, useRef } from 'react';
-import Head from 'next/head';
 import Link from 'next/link';
 
-export default function Home() {
+
+export default function Reddit() {
   const [urls, setUrls] = useState(['']);
   const [logs, setLogs] = useState({});
   const [isValidUrls, setIsValidUrls] = useState([true]);
   const [postDetails, setPostDetails] = useState({});
   const [error, setError] = useState({});
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-  const [metrics, setMetrics] = useState(null);
-  const [loading, setLoading] = useState(false);
   const intervalRefs = useRef({});
 
   const validateUrl = (url) => url.includes('.com');
@@ -73,7 +69,6 @@ export default function Home() {
 
   const handleSubmit = async (event) => {
     event.preventDefault();
-    fetchMetrics();
 
     urls.forEach((url, index) => {
       const isPostAvailable = checkPostStatus(url, index);
@@ -84,10 +79,12 @@ export default function Home() {
 
       setLogs((prev) => ({ ...prev, [url]: 'Monitoring started...\n' }));
 
+     
       if (intervalRefs.current[url]) {
         clearInterval(intervalRefs.current[url]);
       }
 
+     
       intervalRefs.current[url] = setInterval(async () => {
         const isPostAvailable = await checkPostStatus(url, index);
         if (!isPostAvailable) {
@@ -97,40 +94,9 @@ export default function Home() {
           }));
           clearInterval(intervalRefs.current[url]);
         }
-      }, 10000);
+      }, 10000); 
     });
   };
-
-
-  const fetchMetrics = async () => {
-    try {
-      const response = await fetch('/api/reddit-login-metrics', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ username, password }),
-      });
-  
-      if (!response.ok) {
-        throw new Error('Network response was not ok');
-      }
-  
-      const data = await response.json();
-      if (data.error) {
-        setError(data.error);
-        setMetrics([]);
-      } else {
-        setMetrics(data.metrics || []);
-        setError(null);
-      }
-    } catch (error) {
-      console.error('Error fetching metrics:', error);
-      setError('Failed to fetch metrics');
-      setMetrics([]);
-    }
-  };
-  
 
   const handleUrlChange = (index, value) => {
     setUrls((prev) => {
@@ -145,27 +111,6 @@ export default function Home() {
     setIsValidUrls((prev) => [...prev, true]);
   };
 
-  const handleFetchLatestMetrics = async () => {
-    try {
-      const response = await fetch(`/api/fetch-latest-metrics?username=${username}`);
-      if (!response.ok) {
-        throw new Error('Network response was not ok');
-      }
-      const data = await response.json();
-      if (data.error) {
-        setError(data.error);
-        setMetrics([]);
-      } else {
-        setMetrics(data.metrics || []);
-        setError(null);
-      }
-    } catch (error) {
-      console.error('Error fetching latest metrics:', error);
-      setError('Failed to fetch latest metrics');
-      setMetrics([]);
-    }
-  };
-
   useEffect(() => {
     return () => {
       Object.keys(intervalRefs.current).forEach((url) => {
@@ -176,10 +121,6 @@ export default function Home() {
 
   return (
     <div className="container">
-      <Head>
-        <title>Reddit Monitoring</title>
-        <meta name="description" content="Monitor Reddit posts" />
-      </Head>
       <header className="header">
         <h1>Content Monitor</h1>
         <nav>
@@ -193,28 +134,6 @@ export default function Home() {
       <main>
         <img src="/logo.png" alt="Logo" width={200} height={200} className="logo" />
         <form onSubmit={handleSubmit}>
-          <div>
-            <p>Please enter the url of all posts created by this user at once.</p>
-            <label htmlFor="username">Username:</label>
-            <input
-              type="text"
-              id="username"
-              name="username"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              required
-            />
-          </div>
-          <div>
-            <label htmlFor="password">Password:</label>
-            <input
-              id="password"
-              name="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
-          </div>
           {urls.map((url, index) => (
             <div key={index}>
               <label htmlFor={`url-${index}`}>Enter URL:</label>
@@ -231,10 +150,7 @@ export default function Home() {
           ))}
           <button type="button" onClick={addUrlField}>Add URL</button>
           <button type="submit">Start Monitoring</button>
-          <p>Post data can be updated automatically in backend. Press the button to read the latest metrics data.</p>
-          <button type="button" onClick={handleFetchLatestMetrics}>Fetch Latest Metrics</button> 
         </form>
-
         {urls.map((url, index) => (
           <div key={index}>
             <div id="log">
@@ -244,31 +160,16 @@ export default function Home() {
               <div className="post-details">
                 <h2>Post Details for {url}</h2>
                 <p><strong>Title:</strong> {postDetails[url].title}</p>
-                <p><strong>Post ID:</strong> {postDetails[url].post_id}</p> 
                 <p><strong>Author:</strong> {postDetails[url].author}</p>
                 <p><strong>Created:</strong> {new Date(postDetails[url].created_utc * 1000).toLocaleString()}</p>
                 <p><strong>Subreddit:</strong> {postDetails[url].subreddit}</p>
                 <p><strong>Status:</strong> {postDetails[url].is_deleted ? 'Deleted or Removed by a Moderator' : 'Available'}</p>
-                {loading && <p>Loading metrics...</p>}
-                {metrics && metrics.find(m => m.postID === postDetails[url].post_id) ? (
-                  <div>
-                    <h3>Metrics</h3>
-                    <p><strong>Time of scraping:</strong> {metrics.find(m => m.postID === postDetails[url].post_id).scrapeTime}</p>
-                    <p><strong>Views:</strong> {metrics.find(m => m.postID === postDetails[url].post_id).numViews}</p>
-                    <p><strong>Upvotes:</strong> {metrics.find(m => m.postID === postDetails[url].post_id).numUpvotes}</p>
-                    <p><strong>Comments:</strong> {metrics.find(m => m.postID === postDetails[url].post_id).numComments}</p>
-                    <p><strong>XPosts:</strong> {metrics.find(m => m.postID === postDetails[url].post_id).numXPosts}</p>
-                  </div>
-                ) : (
-                  <p>This post may not be created by this user.</p>
-                )}
               </div>
             )}
-            {/* {error[url] && <div className="error">{error[url]}</div>} */}
+            {error[url] && <div className="error">{error[url]}</div>}
             {!isValidUrls[index] && <div className="error">Invalid URL. Please enter a valid post URL.</div>}
           </div>
         ))}
-
       </main>
       <footer className="footer">
         <p>&copy; 2024 </p>

@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
 
-export default function Home() {
+export default function RedditAuthenticated() {
   const [urls, setUrls] = useState(['']);
   const [logs, setLogs] = useState({});
   const [isValidUrls, setIsValidUrls] = useState([true]);
@@ -102,35 +102,39 @@ export default function Home() {
   };
 
 
-  const fetchMetrics = async () => {
-    try {
-      const response = await fetch('/api/reddit-login-metrics', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ username, password }),
-      });
-  
-      if (!response.ok) {
-        throw new Error('Network response was not ok');
-      }
-  
-      const data = await response.json();
-      if (data.error) {
-        setError(data.error);
-        setMetrics([]);
-      } else {
-        setMetrics(data.metrics || []);
-        setError(null);
-      }
-    } catch (error) {
-      console.error('Error fetching metrics:', error);
-      setError('Failed to fetch metrics');
-      setMetrics([]);
+const fetchMetrics = async () => {
+  setLoading(true); 
+  try {
+    const response = await fetch('/api/reddit-login-metrics', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ username, password }),
+    });
+
+    if (!response.ok) {
+      throw new Error('Network response was not ok');
     }
-  };
-  
+
+    const data = await response.json();
+    console.log('Metrics:', data);
+    if (data.error) {
+      setError(data.error);
+      setMetrics(null);
+    } else {
+      setMetrics(data.metrics);
+      setError(null);
+    }
+  } catch (error) {
+    console.error('Error fetching metrics:', error);
+    setError('Failed to fetch metrics');
+    setMetrics(null);
+  } finally {
+    setLoading(false); 
+  }
+};
+
 
   const handleUrlChange = (index, value) => {
     setUrls((prev) => {
@@ -143,27 +147,6 @@ export default function Home() {
   const addUrlField = () => {
     setUrls((prev) => [...prev, '']);
     setIsValidUrls((prev) => [...prev, true]);
-  };
-
-  const handleFetchLatestMetrics = async () => {
-    try {
-      const response = await fetch(`/api/fetch-latest-metrics?username=${username}`);
-      if (!response.ok) {
-        throw new Error('Network response was not ok');
-      }
-      const data = await response.json();
-      if (data.error) {
-        setError(data.error);
-        setMetrics([]);
-      } else {
-        setMetrics(data.metrics || []);
-        setError(null);
-      }
-    } catch (error) {
-      console.error('Error fetching latest metrics:', error);
-      setError('Failed to fetch latest metrics');
-      setMetrics([]);
-    }
   };
 
   useEffect(() => {
@@ -184,9 +167,9 @@ export default function Home() {
         <h1>Content Monitor</h1>
         <nav>
           <ul>
-          <li><Link href="/">Reddit (Login)</Link></li>
+            <li><Link href="/reddit-authenticated">Reddit (Login)</Link></li>
             <li><Link href="/reddit-original">Reddit</Link></li>
-            <li><Link href="/twitter">Twitter</Link></li>
+            <li><a href="#Twitter">Twitter</a></li>
           </ul>
         </nav>
       </header>
@@ -231,8 +214,6 @@ export default function Home() {
           ))}
           <button type="button" onClick={addUrlField}>Add URL</button>
           <button type="submit">Start Monitoring</button>
-          <p>Post data can be updated automatically in backend. Press the button to read the latest metrics data.</p>
-          <button type="button" onClick={handleFetchLatestMetrics}>Fetch Latest Metrics</button> 
         </form>
 
         {urls.map((url, index) => (
@@ -253,14 +234,13 @@ export default function Home() {
                 {metrics && metrics.find(m => m.postID === postDetails[url].post_id) ? (
                   <div>
                     <h3>Metrics</h3>
-                    <p><strong>Time of scraping:</strong> {metrics.find(m => m.postID === postDetails[url].post_id).scrapeTime}</p>
                     <p><strong>Views:</strong> {metrics.find(m => m.postID === postDetails[url].post_id).numViews}</p>
                     <p><strong>Upvotes:</strong> {metrics.find(m => m.postID === postDetails[url].post_id).numUpvotes}</p>
                     <p><strong>Comments:</strong> {metrics.find(m => m.postID === postDetails[url].post_id).numComments}</p>
                     <p><strong>XPosts:</strong> {metrics.find(m => m.postID === postDetails[url].post_id).numXPosts}</p>
                   </div>
                 ) : (
-                  <p>This post may not be created by this user.</p>
+                  <p style={color = "red"}>This post may not be created by this user.</p>
                 )}
               </div>
             )}
