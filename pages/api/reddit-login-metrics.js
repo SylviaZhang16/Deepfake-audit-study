@@ -4,6 +4,7 @@ import fs from 'fs';
 import cron from 'node-cron';
 
 const credentialsFilePath = path.resolve('./data/reddit-credentials.json');
+const pythonPath = '/opt/homebrew/bin/python3';
 
 const readCredentials = () => {
   if (fs.existsSync(credentialsFilePath)) {
@@ -21,7 +22,7 @@ const scrapeDataForUser = (username, password, callback) => {
   const scriptPath = path.resolve('./pages/api/scripts/reddit-scraper.py');
   console.log('Executing script at path:', scriptPath);
 
-  const process = spawn('python3', [scriptPath, username, password]);
+  const process = spawn(venvPath, [scriptPath, username, password]);
 
   let output = '';
   let errorOutput = '';
