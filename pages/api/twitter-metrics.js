@@ -8,7 +8,7 @@ export default function handler(req, res) {
   }
 
   const { email, username, password, urls } = req.body;
-  const scriptPath = path.resolve('./pages/api/scripts//twitter-scraper.py');
+  const scriptPath = path.resolve('./pages/api/scripts/twitter-scraper.py');
   console.log('Executing script at path:', scriptPath);
 
   const process = spawn('python3', [scriptPath, email, username, password, ...urls]);
@@ -29,11 +29,14 @@ export default function handler(req, res) {
   process.on('close', (code) => {
     if (code === 0) {
       try {
-        const metrics = JSON.parse(output);
+        const trimmedOutput = output.trim();
+        const jsonStartIndex = trimmedOutput.indexOf('['); // Ensure we find the start of the JSON array
+        const jsonEndIndex = trimmedOutput.lastIndexOf(']') + 1; // Ensure we find the end of the JSON array
+        const metrics = JSON.parse(trimmedOutput.slice(jsonStartIndex, jsonEndIndex));
         res.status(200).json({ metrics });
       } catch (err) {
         console.error('Error parsing JSON:', err);
-        res.status(500).json({ error: 'Failed to parse metrics' });
+        res.status(500).json({ error: 'Failed to parse metrics', details: output });
       }
     } else {
       console.error('Error executing script:', errorOutput);

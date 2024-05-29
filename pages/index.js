@@ -91,13 +91,18 @@ export default function Home() {
       intervalRefs.current[url] = setInterval(async () => {
         const isPostAvailable = await checkPostStatus(url, index);
         if (!isPostAvailable) {
+          const deletionTime = new Date().toLocaleString();
           setLogs((prev) => ({
             ...prev,
-            [url]: (prev[url] || '') + 'The post has been deleted or removed by a moderator.\n',
+            [url]: (prev[url] || '') + `The post has been deleted or removed by a moderator at ${deletionTime}.\n`,
+          }));
+          setPostDetails((prev) => ({
+            ...prev,
+            [url]: { ...prev[url], is_deleted: true, deletionTime },
           }));
           clearInterval(intervalRefs.current[url]);
         }
-      }, 10000);
+      }, 60000); // Check every minute
     });
   };
 
@@ -249,6 +254,9 @@ export default function Home() {
                 <p><strong>Created:</strong> {new Date(postDetails[url].created_utc * 1000).toLocaleString()}</p>
                 <p><strong>Subreddit:</strong> {postDetails[url].subreddit}</p>
                 <p><strong>Status:</strong> {postDetails[url].is_deleted ? 'Deleted or Removed by a Moderator' : 'Available'}</p>
+                {postDetails[url].is_deleted && postDetails[url].deletionTime && (
+                  <p><strong>Deletion Time:</strong> {postDetails[url].deletionTime}</p>
+                )}
                 {loading && <p>Loading metrics...</p>}
                 {metrics && metrics.find(m => m.postID === postDetails[url].post_id) ? (
                   <div>
