@@ -20,6 +20,27 @@ You can start editing the page by modifying `app/page.js`. The page auto-updates
 
 This project uses [`next/font`](https://nextjs.org/docs/basic-features/font-optimization) to automatically optimize and load Inter, a custom Google Font.
 
+## Troubleshooting
+
+If you encourter the problem when you try to set up the python environment in the projetc ('can't resolve some module'),try to activate the virtual environment in the root directory:
+For macOS and Linux:
+
+```bash
+source venv/bin/activate
+```
+
+For Windows:
+
+```bash
+.\venv\Scripts\activate
+```
+
+Then install the required packages within the virtual environment:
+
+```bash
+pip install selenium webdriver-manager
+```
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:
