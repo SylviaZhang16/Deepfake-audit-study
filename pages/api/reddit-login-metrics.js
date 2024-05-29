@@ -5,6 +5,7 @@ import cron from 'node-cron';
 
 const credentialsFilePath = path.resolve('./data/reddit-credentials.json');
 const pythonPath = '/opt/homebrew/bin/python3';
+const venvPath = path.resolve('./venv/bin/python');
 
 const readCredentials = () => {
   if (fs.existsSync(credentialsFilePath)) {

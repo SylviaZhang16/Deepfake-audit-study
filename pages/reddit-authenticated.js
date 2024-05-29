@@ -105,7 +105,7 @@ export default function RedditAuthenticated() {
 const fetchMetrics = async () => {
   setLoading(true); 
   try {
-    const response = await fetch('/api/reddit-login-metrics', {
+    const response = await fetch('/api/reddit-login-scraper', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

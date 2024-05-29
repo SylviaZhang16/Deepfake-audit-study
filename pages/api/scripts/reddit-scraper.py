@@ -3,7 +3,7 @@ import json
 import csv
 import sys
 import pytz
-import datetime
+from datetime import datetime
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
@@ -19,7 +19,7 @@ def get_reddit_posts_metrics(username, password):
     user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
     
     options = webdriver.ChromeOptions()
-    # options.add_argument('--headless')
+    options.add_argument('--headless')
     options.add_argument(f'user-agent={user_agent}')
     options.add_argument('--disable-gpu')
     options.add_argument('--no-sandbox')

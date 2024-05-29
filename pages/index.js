@@ -104,7 +104,7 @@ export default function Home() {
 
   const fetchMetrics = async () => {
     try {
-      const response = await fetch('/api/reddit-login-metrics', {
+      const response = await fetch('/api/reddit-login-scraper', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
