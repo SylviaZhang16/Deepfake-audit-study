@@ -1,8 +1,8 @@
-import puppeteer from 'puppeteer-extra';
-import StealthPlugin from 'puppeteer-extra-plugin-stealth';
+import puppeteer from 'puppeteer';
+// import StealthPlugin from 'puppeteer-extra-plugin-stealth';
 import { DateTime } from 'luxon';
 
-puppeteer.use(StealthPlugin());
+// puppeteer.use(StealthPlugin());
 
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -41,7 +41,7 @@ const getTwitterPostMetrics = async (email, username, password, postUrls) => {
 
   try {
     await page.waitForSelector(usernameInputSelector);
-    const [usernameInput] = await page.$(usernameInputSelector);
+    const usernameInput = await page.$(usernameInputSelector);
 
     if (usernameInput) {
       await usernameInput.type(username);
@@ -69,20 +69,24 @@ const getTwitterPostMetrics = async (email, username, password, postUrls) => {
     const user = postUrl.split("/")[3];
     const postId = postUrl.split("/")[5];
 
-    const metricsXpath = '//div[@role="group" and @aria-label]';
-    const [metricsElement] = await page.$x(metricsXpath);
+    const metricsSelector = 'div[role="group"][aria-label]';
+    await page.waitForSelector(metricsSelector);
+    const metricsElement = await page.$(metricsSelector);
     const ariaLabel = await metricsElement.evaluate(el => el.getAttribute('aria-label'));
+
+    console.log('Metrics:', ariaLabel);
 
     const metrics = {};
     ariaLabel.split(',').forEach(item => {
       const [key, value] = item.trim().split(' ').reverse();
-      metrics[value] = key;
+      metrics[key] = value;
     });
 
     const viewCount = metrics['views'] || '0';
     const quotesNumber = metrics['replies'] || '0';
-    const repostsNumber = metrics['retweets'] || '0';
+    const repostsNumber = metrics['reposts'] || '0';
     const likesNumber = metrics['likes'] || '0';
+    const bookmarksNumber = metrics['bookmarks'] || '0';
 
     const currentTime = DateTime.now().setZone('America/New_York').toFormat('yyyy-MM-dd HH:mm:ss');
 
@@ -93,7 +97,8 @@ const getTwitterPostMetrics = async (email, username, password, postUrls) => {
       numViews: viewCount,
       numComments: quotesNumber,
       numRetweets: repostsNumber,
-      numLikes: likesNumber
+      numLikes: likesNumber,
+      numBookmarks: bookmarksNumber,
     };
 
     postMetricsList.push(postMetrics);
