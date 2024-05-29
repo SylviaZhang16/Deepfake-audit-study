@@ -2,6 +2,8 @@ import time
 import json
 import csv
 import sys
+import pytz
+import datetime
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
@@ -9,8 +11,6 @@ from selenium.webdriver.chrome.service import Service as ChromeService
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from webdriver_manager.chrome import ChromeDriverManager
-from datetime import datetime
-import pytz
 
 def get_reddit_posts_metrics(username, password):
     username = sys.argv[1]
