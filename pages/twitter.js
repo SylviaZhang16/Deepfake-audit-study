@@ -166,7 +166,7 @@ export default function Twitter() {
           <div>
             <label htmlFor="password">Password:</label>
             <input
-              type="password"
+              // type="password"
               id="password"
               name="password"
               value={password}
