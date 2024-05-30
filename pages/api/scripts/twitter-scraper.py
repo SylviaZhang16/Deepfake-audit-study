@@ -1,6 +1,5 @@
 import time
 import json
-import csv
 import sys
 from datetime import datetime
 import pytz
@@ -11,8 +10,6 @@ from selenium.webdriver.chrome.service import Service as ChromeService
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from webdriver_manager.chrome import ChromeDriverManager
-
-
 
 def get_twitter_post_metrics(email, username, password, post_urls):
     user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
@@ -64,42 +61,49 @@ def get_twitter_post_metrics(email, username, password, post_urls):
             user = post_url.split("/")[3]
             post_id = post_url.split("/")[5]
 
-            metrics_xpath = '//div[@role="group" and @aria-label]'
-            metrics_element = driver.find_element(By.XPATH, metrics_xpath)
-            aria_label = metrics_element.get_attribute('aria-label')
+            try:
+                metrics_xpath = '//div[@role="group" and @aria-label]'
+                metrics_element = driver.find_element(By.XPATH, metrics_xpath)
+                aria_label = metrics_element.get_attribute('aria-label')
 
-            metrics = {}
-            for item in aria_label.split(','):
-                key, value = item.strip().rsplit(' ', 1)
-                metrics[value] = key
+                metrics = {}
+                for item in aria_label.split(','):
+                    try:
+                        key, value = item.strip().rsplit(' ', 1)
+                        metrics[value] = key
+                    except ValueError:
+                        print(f"Skipping invalid metric format: {item.strip()}")
+                        continue
 
-            view_count = metrics.get('views', '0')
-            quotes_number = metrics.get('replies', '0')
-            reposts_number = metrics.get('reposts', '0')
-            likes_number = metrics.get('likes', '0')
-            tz = pytz.timezone('America/New_York')
-            current_time = datetime.now(tz).strftime("%Y-%m-%d %H:%M:%S")
+                view_count = metrics.get('views', '0')
+                quotes_number = metrics.get('replies', '0')
+                reposts_number = metrics.get('reposts', '0')
+                likes_number = metrics.get('likes', '0')
+                tz = pytz.timezone('America/New_York')
+                current_time = datetime.now(tz).strftime("%Y-%m-%d %H:%M:%S")
 
-            post_metrics = {
-                "authorID": user,
-                "tweetID": post_id,
-                "scrapeTime": current_time,
-                "numViews": view_count,
-                "numComments": quotes_number,
-                "numRetweets": reposts_number,
-                "numLikes": likes_number
-            }
+                post_metrics = {
+                    "authorID": user,
+                    "tweetID": post_id,
+                    "scrapeTime": current_time,
+                    "numViews": view_count,
+                    "numComments": quotes_number,
+                    "numRetweets": reposts_number,
+                    "numLikes": likes_number,
+                    "isDeleted": False
+                }
+
+            except:
+                tz = pytz.timezone('America/New_York')
+                current_time = datetime.now(tz).strftime("%Y-%m-%d %H:%M:%S")
+                post_metrics = {
+                    "authorID": user,
+                    "tweetID": post_id,
+                    "scrapeTime": current_time,
+                    "isDeleted": True
+                }
 
             post_metrics_list.append(post_metrics)
-
-
-        filename = f"data/{post_id}.csv"
-
-        # with open(filename, 'w', newline='') as f:
-        #     writer = csv.DictWriter(f, fieldnames=post_metrics.keys())
-
-        #     writer.writeheader()
-        #     writer.writerow(post_metrics)
 
         return post_metrics_list
 
@@ -110,13 +114,6 @@ def get_twitter_post_metrics(email, username, password, post_urls):
         driver.quit()
 
 if __name__ == "__main__":
-
-    # TODO: read credentials from a csv file / environment variables
-    # email = input("Enter Twitter email: ")
-    # username = input("Enter Twitter username: ")
-    # password = input("Enter Twitter password: ")
-    # post_url = input("Enter post URL: ")
-
     email = sys.argv[1]
     username = sys.argv[2]
     password = sys.argv[3]
