@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "aws-sdk": "^2.1631.0",
     "axios": "^1.6.8",
     "luxon": "^3.4.4",
     "next": "14.2.3",

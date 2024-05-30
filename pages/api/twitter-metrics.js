@@ -1,9 +1,11 @@
 import puppeteer from 'puppeteer';
 import { DateTime } from 'luxon';
+import logToCloudWatch from '../utils/logToCloudWatch';
 
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 
 const getTwitterPostMetrics = async (email, username, password, postUrls) => {
+  logToCloudWatch('audit-study-log', 'audit-study-stream', `Starting getTwitterPostMetrics with email: ${email} and username: ${username}`);
   console.log('Starting getTwitterPostMetrics');
   const userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36";
   const browser = await puppeteer.launch({ headless: true,
@@ -38,6 +40,7 @@ const getTwitterPostMetrics = async (email, username, password, postUrls) => {
       }
     } catch (error) {
       console.log('No username prompt, skipping...');
+      logToCloudWatch('audit-study-log', 'audit-study-stream', 'No username prompt, skipping...');
     }
 
     await page.waitForSelector(passwordInputSelector);
@@ -46,6 +49,7 @@ const getTwitterPostMetrics = async (email, username, password, postUrls) => {
     await passwordInput.press('Enter');
   } catch (error) {
     console.error('Error during login:', error);
+    logToCloudWatch('/your/log/group', 'your-log-stream', `Error during login: ${error.message}`);
     throw new Error('Failed to login to Twitter');
   }
 
@@ -55,6 +59,7 @@ const getTwitterPostMetrics = async (email, username, password, postUrls) => {
   for (const postUrl of postUrls) {
     try {
       console.log(`Navigating to post URL: ${postUrl}`);
+      logToCloudWatch('audit-study-log', 'audit-study-stream', `Navigating to post URL: ${postUrl}`);
       await page.goto(postUrl, { waitUntil: 'networkidle2' });
       await delay(5000);
       const user = postUrl.split("/")[3];
@@ -126,10 +131,12 @@ export default async function handler(req, res) {
   }
   const { email, username, password, urls } = req.body;
   try {
+    logToCloudWatch('audit-study-log', 'audit-study-stream', `API called with: ${JSON.stringify({ email, username, urls })}`);
     console.log('API called with:', { email, username, urls });
     const metrics = await getTwitterPostMetrics(email, username, password, urls);
     res.status(200).json({ metrics });
   } catch (err) {
+    logToCloudWatch('audit-study-log', 'audit-study-stream', `Error fetching metrics: ${err.message}`);
     console.error('Error fetching metrics:', err);
     res.status(500).json({ error: 'Failed to fetch metrics', details: err.message });
   }
