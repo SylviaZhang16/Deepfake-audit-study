@@ -10,14 +10,6 @@
       "StackName": "amplify-auditstudy2024-dev-360c1",
       "StackId": "arn:aws:cloudformation:us-east-1:211125457801:stack/amplify-auditstudy2024-dev-360c1/a0adbce0-1d29-11ef-a16f-0e68bdf41a5f",
       "AmplifyAppId": "d3h6npylyajwws"
-    },
-    "categories": {
-      "hosting": {
-        "amplifyhosting": {
-          "appId": "d3h6npylyajwws",
-          "type": "cicd"
-        }
-      }
     }
   }
 }
