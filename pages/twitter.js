@@ -139,7 +139,7 @@ export default function Twitter() {
         </nav>
       </header>
       <main>
-        <img src="/logo.png" alt="Logo" width={200} height={200} className="logo" />
+        <img src="/Logo-Twitter.png" alt="Logo" width={200} height={200} className="logo" />
         <form onSubmit={handleSubmit}>
           <div>
             <label htmlFor="email">Email:</label>
@@ -166,7 +166,7 @@ export default function Twitter() {
           <div>
             <label htmlFor="password">Password:</label>
             <input
-              type="password"
+              // type="password"
               id="password"
               name="password"
               value={password}
