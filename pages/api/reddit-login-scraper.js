@@ -43,11 +43,13 @@ const scrapeDataForUser = async (username, password, callback) => {
 
     await page.waitForNavigation({ waitUntil: 'networkidle2' });
 
+    await page.screenshot({ path: 'after_login.png', fullPage: true });
+
     await page.goto(`https://www.reddit.com/user/${username}/submitted/`, { waitUntil: 'networkidle2' });
 
-    const trackersXpath = '//*[@id="main-content"]//faceplate-tracker[@source="post_insights" and @action="view" and @noun="aggregate_stats"]';
+    const trackersSelector = '#main-content faceplate-tracker[source="post_insights"][action="view"][noun="aggregate_stats"]';
 
-    const trackerElements = await page.$x(trackersXpath);
+    const trackerElements = await page.$$(trackersSelector);
     
     const postsData = [];
 
@@ -58,20 +60,30 @@ const scrapeDataForUser = async (username, password, callback) => {
         const postID = dataContextJson['action_info']['post_id'].split('_').pop();
         const subredditID = dataContextJson['action_info']['subreddit_id'].split('_').pop();
 
-        const viewsXpath = './div[1]/div/faceplate-tooltip[1]/div/div';
-        const upvoteRateXpath = './div[1]/div/faceplate-tooltip[2]/div/div';
-        const commentsXpath = './div[1]/div/faceplate-tooltip[3]/div/div';
-        const sharesXpath = './div[1]/div/faceplate-tooltip[4]/div/div';
+        // const viewsXpath = './div[1]/div/faceplate-tooltip[1]/div/div';
+        // const upvoteRateXpath = './div[1]/div/faceplate-tooltip[2]/div/div';
+        // const commentsXpath = './div[1]/div/faceplate-tooltip[3]/div/div';
+        // const sharesXpath = './div[1]/div/faceplate-tooltip[4]/div/div';
 
-        const [viewsElement] = await trackerElement.$x(viewsXpath);
-        const [upvoteRateElement] = await trackerElement.$x(upvoteRateXpath);
-        const [commentsElement] = await trackerElement.$x(commentsXpath);
-        const [sharesElement] = await trackerElement.$x(sharesXpath);
+        // const [viewsElement] = await trackerElement.$x(viewsXpath);
+        // const [upvoteRateElement] = await trackerElement.$x(upvoteRateXpath);
+        // const [commentsElement] = await trackerElement.$x(commentsXpath);
+        // const [sharesElement] = await trackerElement.$x(sharesXpath);
 
-        const views = await page.evaluate(el => el.textContent, viewsElement);
-        const upvoteRate = await page.evaluate(el => el.textContent, upvoteRateElement);
-        const comments = await page.evaluate(el => el.textContent, commentsElement);
-        const shares = await page.evaluate(el => el.textContent, sharesElement);
+        const viewsSelector = 'div.mt-s faceplate-tooltip:nth-of-type(1) > div[slot="trigger"] > div';
+        const upvoteRateSelector = 'div.mt-s faceplate-tooltip:nth-of-type(2) > div[slot="trigger"] > div';
+        const commentsSelector = 'div.mt-s faceplate-tooltip:nth-of-type(3) > div[slot="trigger"] > div';
+        const sharesSelector = 'div.mt-s faceplate-tooltip:nth-of-type(4) > div[slot="trigger"] > div';
+
+        const viewsElement = await trackerElement.$(viewsSelector);
+        const upvoteRateElement = await trackerElement.$(upvoteRateSelector);
+        const commentsElement = await trackerElement.$(commentsSelector);
+        const sharesElement = await trackerElement.$(sharesSelector);
+
+        const views = await page.evaluate(el => el.textContent.trim(), viewsElement);
+        const upvoteRate = await page.evaluate(el => el.textContent.trim(), upvoteRateElement);
+        const comments = await page.evaluate(el => el.textContent.trim(), commentsElement);
+        const shares = await page.evaluate(el => el.textContent.trim(), sharesElement);
 
         const tz = 'America/New_York';
         const currentTime = DateTime.now().setZone(tz).toFormat('yyyy-MM-dd HH:mm:ss');
@@ -140,7 +152,7 @@ const scrapeData = () => {
   });
 };
 
-cron.schedule('*/10 * * * *', scrapeData);
+cron.schedule('*/1 * * * *', scrapeData);
 
 export default function handler(req, res) {
   if (req.method !== 'POST') {
