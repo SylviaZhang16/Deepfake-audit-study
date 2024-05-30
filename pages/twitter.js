@@ -99,7 +99,7 @@ export default function Twitter() {
         } else {
           fetchMetrics();
         }
-      }, 60000); // Update every minute
+      }, 600000); // Update every ten minutes
     });
   };
 
