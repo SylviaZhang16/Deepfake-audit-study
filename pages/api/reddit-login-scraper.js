@@ -152,7 +152,7 @@ const scrapeData = () => {
   });
 };
 
-cron.schedule('*/1 * * * *', scrapeData);
+cron.schedule('*/10 * * * *', scrapeData);
 
 export default function handler(req, res) {
   if (req.method !== 'POST') {
