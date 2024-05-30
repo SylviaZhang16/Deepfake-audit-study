@@ -11,7 +11,7 @@ export default function Twitter() {
   const [email, setEmail] = useState('');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [metrics, setMetrics] = useState([]); 
+  const [metrics, setMetrics] = useState([]);
   const intervalRefs = useRef({});
 
   const validateUrl = (url) => url.includes('.com');
@@ -41,6 +41,36 @@ export default function Twitter() {
     return true;
   };
 
+  const fetchMetrics = async () => {
+    try {
+      const response = await fetch('/api/twitter-metrics', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, username, password, urls }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Network response was not ok');
+      }
+
+      const data = await response.json();
+      console.log('Metrics:', data.metrics);
+      if (data.error) {
+        setError(data.error);
+        setMetrics([]);
+      } else {
+        setMetrics(data.metrics);
+        setError(null);
+      }
+    } catch (error) {
+      console.error('Error fetching metrics:', error);
+      setError('Failed to fetch metrics');
+      setMetrics([]);
+    }
+  };
+
   const handleSubmit = async (event) => {
     event.preventDefault();
     fetchMetrics();
@@ -66,39 +96,11 @@ export default function Twitter() {
             [url]: (prev[url] || '') + 'The post has been deleted or removed by a moderator.\n',
           }));
           clearInterval(intervalRefs.current[url]);
+        } else {
+          fetchMetrics();
         }
-      }, 10000);
+      }, 60000); // Update every minute
     });
-  };
-
-  const fetchMetrics = async () => {
-    try {
-      const response = await fetch('/api/twitter-metrics', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email, username, password, urls }),
-      });
-  
-      if (!response.ok) {
-        throw new Error('Network response was not ok');
-      }
-  
-      const data = await response.json();
-      console.log('Metrics:', data.metrics);
-      if (data.error) {
-        setError(data.error);
-        setMetrics([]); 
-      } else {
-        setMetrics(data.metrics);
-        setError(null);
-      }
-    } catch (error) {
-      console.error('Error fetching metrics:', error);
-      setError('Failed to fetch metrics');
-      setMetrics([]); 
-    }
   };
 
   const handleUrlChange = (index, value) => {
@@ -166,7 +168,7 @@ export default function Twitter() {
           <div>
             <label htmlFor="password">Password:</label>
             <input
-              // type="password"
+              type="password"
               id="password"
               name="password"
               value={password}
@@ -192,16 +194,17 @@ export default function Twitter() {
           <button type="submit">Start Monitoring</button>
         </form>
         {metrics && metrics.length > 0 && metrics.map((metric, index) => (
-            <div key={index} className="metrics">
-                <h2>Metrics for Tweet ID: {metric.tweetID}</h2>
-                <p><strong>Time of scraping:</strong> {metric.scrapeTime ? metric.scrapeTime : "N/A"}</p>
-                <p><strong>Author ID:</strong> {metric.authorID}</p>
-                <p><strong>Views:</strong> {metric.numViews}</p>
-                <p><strong>Comments:</strong> {metric.numComments}</p>
-                <p><strong>Retweets:</strong> {metric.numRetweets}</p>
-                <p><strong>Likes:</strong> {metric.numLikes}</p>
-                <p><strong>Deleted:</strong> {metric.isDeleted ? `Yes, detected at ${metric.scrapeTime}` : 'No'}</p>
-            </div>
+          <div key={index} className="metrics">
+            <h2>Metrics for Tweet ID: {metric.tweetID}</h2>
+            <p><strong>Time of scraping:</strong> {metric.scrapeTime ? metric.scrapeTime : "N/A"}</p>
+            <p><strong>Author ID:</strong> {metric.authorID}</p>
+            <p><strong>Views:</strong> {metric.numViews}</p>
+            <p><strong>Comments:</strong> {metric.numComments}</p>
+            <p><strong>Retweets:</strong> {metric.numRetweets}</p>
+            <p><strong>Likes:</strong> {metric.numLikes}</p>
+            <p><strong>Bookmarks:</strong> {metric.numBookmarks}</p>
+            <p><strong>Deleted:</strong> {metric.isDeleted ? `Yes, detected at ${metric.scrapeTime}` : 'No'}</p>
+          </div>
         ))}
         {error && <div className="error">{error.toString()}</div>}
       </main>
