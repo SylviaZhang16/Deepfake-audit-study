@@ -1,8 +1,5 @@
 import puppeteer from 'puppeteer';
-// import StealthPlugin from 'puppeteer-extra-plugin-stealth';
 import { DateTime } from 'luxon';
-
-// puppeteer.use(StealthPlugin());
 
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -23,16 +20,9 @@ const getTwitterPostMetrics = async (email, username, password, postUrls) => {
 
   await page.goto('https://twitter.com/login', { waitUntil: 'networkidle2' });
 
-  // const emailInputXpath = '//*[@id="layers"]/div[2]/div/div/div/div/div/div[2]/div[2]/div/div/div[2]/div[2]/div/div/div/div[4]/label/div/div[2]/div/input';
-  // const usernameInputXpath = '//*[@id="layers"]/div/div/div/div/div/div/div[2]/div[2]/div/div/div[2]/div[2]/div[1]/div/div[2]/label/div/div[2]/div/input';
-  // const passwordInputXpath = '//*[@id="layers"]/div/div/div/div/div/div/div[2]/div[2]/div/div/div[2]/div[2]/div[1]/div/div/div[3]/div/label/div/div[2]/div[1]/input';
-
   const emailInputSelector = 'input[name="text"][type="text"]';
   const usernameInputSelector = 'input[name="text"][type="text"]';
   const passwordInputSelector = 'input[name="password"][type="password"]';
-  
-  const usernameInputXpath = '//*[@id="layers"]/div[2]/div/div/div/div/div/div[2]/div[2]/div/div/div[2]/div[2]/div[1]/div/div[2]/label/div/div[2]/div/input';
-
 
   await page.waitForSelector(emailInputSelector);
   const emailInput = await page.$(emailInputSelector);
@@ -51,7 +41,6 @@ const getTwitterPostMetrics = async (email, username, password, postUrls) => {
     console.log('No username prompt, skipping...');
   }
 
-  
   await page.waitForSelector(passwordInputSelector);
   const passwordInput = await page.$(passwordInputSelector);
   await passwordInput.type(password);
@@ -69,18 +58,27 @@ const getTwitterPostMetrics = async (email, username, password, postUrls) => {
     const user = postUrl.split("/")[3];
     const postId = postUrl.split("/")[5];
 
-    const metricsSelector = 'div[role="group"][aria-label]';
-    await page.waitForSelector(metricsSelector);
-    const metricsElement = await page.$(metricsSelector);
-    const ariaLabel = await metricsElement.evaluate(el => el.getAttribute('aria-label'));
-
-    console.log('Metrics:', ariaLabel);
+    let isDeleted = false;
+    try {
+      // Check if the post is available by waiting for the metrics element
+      await page.waitForSelector('div[role="group"][aria-label]', { timeout: 10000 });
+    } catch (error) {
+      isDeleted = true;
+      console.log(`Post ${postId} has been deleted or is unavailable.`);
+    }
 
     const metrics = {};
-    ariaLabel.split(',').forEach(item => {
-      const [key, value] = item.trim().split(' ').reverse();
-      metrics[key] = value;
-    });
+    if (!isDeleted) {
+      const metricsElement = await page.$('div[role="group"][aria-label]');
+      const ariaLabel = await metricsElement.evaluate(el => el.getAttribute('aria-label'));
+
+      console.log('Metrics:', ariaLabel);
+
+      ariaLabel.split(',').forEach(item => {
+        const [key, value] = item.trim().split(' ').reverse();
+        metrics[key] = value;
+      });
+    }
 
     const viewCount = metrics['views'] || '0';
     const quotesNumber = metrics['replies'] || '0';
@@ -99,6 +97,7 @@ const getTwitterPostMetrics = async (email, username, password, postUrls) => {
       numRetweets: repostsNumber,
       numLikes: likesNumber,
       numBookmarks: bookmarksNumber,
+      isDeleted,
     };
 
     postMetricsList.push(postMetrics);

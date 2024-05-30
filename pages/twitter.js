@@ -139,7 +139,7 @@ export default function Twitter() {
         </nav>
       </header>
       <main>
-        <img src="/logo.png" alt="Logo" width={200} height={200} className="logo" />
+        <img src="/Logo-Twitter.png" alt="Logo" width={200} height={200} className="logo" />
         <form onSubmit={handleSubmit}>
           <div>
             <label htmlFor="email">Email:</label>
@@ -200,6 +200,7 @@ export default function Twitter() {
                 <p><strong>Comments:</strong> {metric.numComments}</p>
                 <p><strong>Retweets:</strong> {metric.numRetweets}</p>
                 <p><strong>Likes:</strong> {metric.numLikes}</p>
+                <p><strong>Deleted:</strong> {metric.isDeleted ? `Yes, detected at ${metric.scrapeTime}` : 'No'}</p>
             </div>
         ))}
         {error && <div className="error">{error.toString()}</div>}
