@@ -1,6 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-    webpack: (config, { isServer }) => {
+  output: 'standalone',
+  webpack: (config, { isServer }) => {
       if (isServer) {
         config.externals = config.externals.concat([
           /venv/,
