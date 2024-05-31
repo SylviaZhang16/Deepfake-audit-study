@@ -1,33 +1,28 @@
-# Use the official Node.js 18 image as the base image
-FROM node:18
+# Use an official Node.js runtime as a parent image
+FROM --platform=linux/amd64 node:20
 
-# Set the working directory inside the container
+
+
+# Set the working directory
 WORKDIR /app
 
-# Copy package.json and package-lock.json (if available)
+# Copy package.json and package-lock.json
 COPY package*.json ./
 
-# Install Node.js dependencies
+# Install dependencies
 RUN npm install
 
-# Install Python and virtualenv
-RUN apt-get update && \
-    apt-get install -y python3 python3-venv python3-pip && \
-    python3 -m venv /app/venv
-
-# Activate virtual environment and install Python dependencies
-COPY requirements.txt .
-RUN /app/venv/bin/pip install --upgrade pip && \
-    /app/venv/bin/pip install -r requirements.txt
+# Install Playwright dependencies and browsers
+RUN npx playwright install --with-deps
 
 # Copy the rest of the application code
 COPY . .
 
-# Build the Next.js application
+# Build the Next.js app
 RUN npm run build
 
-# Expose port 3000
+# Expose the port the app runs on
 EXPOSE 3000
 
-# Set the entrypoint to ensure the virtual environment is activated
-ENTRYPOINT ["/bin/bash", "-c", "source /app/venv/bin/activate && exec npm start"]
+# Define the command to run the app
+CMD ["npm", "start"]
