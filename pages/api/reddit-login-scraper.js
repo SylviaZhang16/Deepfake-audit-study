@@ -1,11 +1,10 @@
-import puppeteer from 'puppeteer-extra';
-import StealthPlugin from 'puppeteer-extra-plugin-stealth';
+import { chromium } from 'playwright';
 import path from 'path';
 import fs from 'fs';
 import cron from 'node-cron';
 import { DateTime } from 'luxon'; 
+import randomUseragent from 'random-useragent';
 
-puppeteer.use(StealthPlugin());
 const credentialsFilePath = path.resolve('./data/reddit-credentials.json');
 
 const readCredentials = () => {
@@ -22,13 +21,29 @@ const saveCredentials = (credentials) => {
 
 const scrapeDataForUser = async (username, password, callback) => {
   try {
-    const browser = await puppeteer.launch({ headless: false });
-    const page = await browser.newPage();
-    await page.setUserAgent(
-      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
-    );
+    const useragent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36';
+    const browser = await chromium.launch({ headless: false,
+      args: [
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage',
+        '--disable-accelerated-2d-canvas',
+        '--disable-gpu',
+        '--no-zygote',
+        '--disable-software-rasterizer'
+      ] });
+    
+    const randomUserAgent = randomUseragent.getRandom();
+    const context = await browser.newContext({ viewport: 
+        { width: 1920, height: 1080 } , 
+        userAgent:useragent,
+    });
+    const page = await context.newPage();
 
-    await page.goto('https://www.reddit.com/login/', { waitUntil: 'networkidle2' });
+    await page.goto('https://www.reddit.com/login/', { waitUntil: 'networkidle' });
+
+
+    // await page.screenshot({ path: 'before_login.png' });
 
     const usernameInputSelector = '#login-username';
     const passwordInputSelector = '#login-password';
@@ -39,36 +54,35 @@ const scrapeDataForUser = async (username, password, callback) => {
     await page.waitForSelector(passwordInputSelector);
     await page.type(passwordInputSelector, password);
   
+    // console.log('Submitting login form');
     await page.keyboard.press('Enter');
 
-    await page.waitForNavigation({ waitUntil: 'networkidle2' });
+    // await page.screenshot({ path: 'beforenavigation_login.png' });
 
-    await page.screenshot({ path: 'after_login.png', fullPage: true });
+    // await page.waitForNavigation({ timeout: 30000});
+    await page.waitForTimeout(5000); 
 
-    await page.goto(`https://www.reddit.com/user/${username}/submitted/`, { waitUntil: 'networkidle2' });
+    // await page.screenshot({ path: 'after_login.png' });
+
+    // console.log('Navigating to user submitted page');
+    await page.goto(`https://www.reddit.com/user/${username}/submitted/`,{ waitUntil: 'networkidle' });
+
+    // await page.screenshot({ path: 'profile.png' });
 
     const trackersSelector = '#main-content faceplate-tracker[source="post_insights"][action="view"][noun="aggregate_stats"]';
 
     const trackerElements = await page.$$(trackersSelector);
+    // console.log('Found Tracker');
     
     const postsData = [];
 
     for (const trackerElement of trackerElements) {
       try {
         const dataFaceplateContext = await page.evaluate(el => el.getAttribute('data-faceplate-tracking-context'), trackerElement);
+        console.log('Data Faceplate Context:', dataFaceplateContext);
         const dataContextJson = JSON.parse(dataFaceplateContext.replace(/&quot;/g, '"'));
         const postID = dataContextJson['action_info']['post_id'].split('_').pop();
         const subredditID = dataContextJson['action_info']['subreddit_id'].split('_').pop();
-
-        // const viewsXpath = './div[1]/div/faceplate-tooltip[1]/div/div';
-        // const upvoteRateXpath = './div[1]/div/faceplate-tooltip[2]/div/div';
-        // const commentsXpath = './div[1]/div/faceplate-tooltip[3]/div/div';
-        // const sharesXpath = './div[1]/div/faceplate-tooltip[4]/div/div';
-
-        // const [viewsElement] = await trackerElement.$x(viewsXpath);
-        // const [upvoteRateElement] = await trackerElement.$x(upvoteRateXpath);
-        // const [commentsElement] = await trackerElement.$x(commentsXpath);
-        // const [sharesElement] = await trackerElement.$x(sharesXpath);
 
         const viewsSelector = 'div.mt-s faceplate-tooltip:nth-of-type(1) > div[slot="trigger"] > div';
         const upvoteRateSelector = 'div.mt-s faceplate-tooltip:nth-of-type(2) > div[slot="trigger"] > div';
@@ -97,18 +111,21 @@ const scrapeDataForUser = async (username, password, callback) => {
           numComments: comments,
           numXPosts: shares
         };
+
+        // console.log('Post Data:', postData);
+
         postsData.push(postData);
     } catch (e) {
       console.error(`An error occurred while processing a post: ${e}`);
     }
   }
 
-
-
     await browser.close();
 
     const filePath = path.resolve(`./data/reddit/${username}.json`);
     let mergedMetrics = postsData;
+
+    // console.log('Posts Data:', postsData);
 
     if (fs.existsSync(filePath)) {
       const existingData = fs.readFileSync(filePath, 'utf8');

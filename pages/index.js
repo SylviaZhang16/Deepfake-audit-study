@@ -12,6 +12,8 @@ export default function Home() {
   const [password, setPassword] = useState('');
   const [metrics, setMetrics] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [downloadUsername, setDownloadUsername] = useState('');
+
   const intervalRefs = useRef({});
 
   const validateUrl = (url) => url.includes('.com');
@@ -166,6 +168,28 @@ export default function Home() {
     }
   };
 
+  const handleDownload = async (username) => {
+    try {
+      const response = await fetch(`/api/download-file?username=${username}`);
+      if (!response.ok) {
+        throw new Error('Network response was not ok');
+      }
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${username}.json`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    } catch (error) {
+      console.error('Error downloading file:', error);
+      setError('Failed to download file');
+    }
+  };
+  
+  
+
   useEffect(() => {
     return () => {
       Object.keys(intervalRefs.current).forEach((url) => {
@@ -233,6 +257,7 @@ export default function Home() {
           <button type="submit">Start Monitoring</button>
           <p>Post data can be updated automatically in backend. Press the button to read the latest metrics data.</p>
           <button type="button" onClick={handleFetchLatestMetrics}>Fetch Latest Metrics</button> 
+
         </form>
 
         {urls.map((url, index) => (
@@ -268,6 +293,20 @@ export default function Home() {
             {!isValidUrls[index] && <div className="error">Invalid URL. Please enter a valid post URL.</div>}
           </div>
         ))}
+
+      <div>
+        <h2>Download Data</h2>
+        <label htmlFor="downloadUsername">Enter Username to Download Data:</label>
+        <input
+          type="text"
+          id="downloadUsername"
+          name="downloadUsername"
+          value={downloadUsername || ''}
+          onChange={(e) => setDownloadUsername(e.target.value)}
+          required
+        />
+        <button type="button" onClick={() => handleDownload(downloadUsername)}>Download Data</button>
+      </div>
 
       </main>
       <footer className="footer">
