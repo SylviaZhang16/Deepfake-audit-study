@@ -1,8 +1,11 @@
+
+
+
 import { useState, useEffect, useRef } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
 
-export default function RedditAuthenticated() {
+export default function Home() {
   const [urls, setUrls] = useState(['']);
   const [logs, setLogs] = useState({});
   const [isValidUrls, setIsValidUrls] = useState([true]);
@@ -12,6 +15,8 @@ export default function RedditAuthenticated() {
   const [password, setPassword] = useState('');
   const [metrics, setMetrics] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [downloadUsername, setDownloadUsername] = useState('');
+
   const intervalRefs = useRef({});
 
   const validateUrl = (url) => url.includes('.com');
@@ -102,39 +107,35 @@ export default function RedditAuthenticated() {
   };
 
 
-const fetchMetrics = async () => {
-  setLoading(true); 
-  try {
-    const response = await fetch('/api/reddit-login-scraper', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ username, password }),
-    });
-
-    if (!response.ok) {
-      throw new Error('Network response was not ok');
+  const fetchMetrics = async () => {
+    try {
+      const response = await fetch('/api/reddit-login-scraper', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ username, password }),
+      });
+  
+      if (!response.ok) {
+        throw new Error('Network response was not ok');
+      }
+  
+      const data = await response.json();
+      if (data.error) {
+        setError(data.error);
+        setMetrics([]);
+      } else {
+        setMetrics(data.metrics || []);
+        setError(null);
+      }
+    } catch (error) {
+      console.error('Error fetching metrics:', error);
+      setError('Failed to fetch metrics');
+      setMetrics([]);
     }
-
-    const data = await response.json();
-    console.log('Metrics:', data);
-    if (data.error) {
-      setError(data.error);
-      setMetrics(null);
-    } else {
-      setMetrics(data.metrics);
-      setError(null);
-    }
-  } catch (error) {
-    console.error('Error fetching metrics:', error);
-    setError('Failed to fetch metrics');
-    setMetrics(null);
-  } finally {
-    setLoading(false); 
-  }
-};
-
+  };
+  
 
   const handleUrlChange = (index, value) => {
     setUrls((prev) => {
@@ -148,6 +149,69 @@ const fetchMetrics = async () => {
     setUrls((prev) => [...prev, '']);
     setIsValidUrls((prev) => [...prev, true]);
   };
+
+  const handleFetchLatestMetrics = async () => {
+    try {
+      const response = await fetch(`/api/fetch-latest-metrics?username=${username}`);
+      if (!response.ok) {
+        throw new Error('Network response was not ok');
+      }
+      const data = await response.json();
+      if (data.error) {
+        setError(data.error);
+        setMetrics([]);
+      } else {
+        setMetrics(data.metrics || []);
+        setError(null);
+      }
+    } catch (error) {
+      console.error('Error fetching latest metrics:', error);
+      setError('Failed to fetch latest metrics');
+      setMetrics([]);
+    }
+  };
+
+  const handleDownload = async (username) => {
+    try {
+      const response = await fetch(`/api/download-file?username=${username}`);
+      if (!response.ok) {
+        throw new Error('Network response was not ok');
+      }
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${username}.json`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    } catch (error) {
+      console.error('Error downloading file:', error);
+      setError('Failed to download file');
+    }
+  };
+
+  const handleDownloadAll = async () => {
+    try {
+      const response = await fetch(`/api/download-all-files`);
+      if (!response.ok) {
+        throw new Error('Network response was not ok');
+      }
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'all_files.zip';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    } catch (error) {
+      console.error('Error downloading all files:', error);
+      setError('Failed to download all files');
+    }
+  };
+  
+  
 
   useEffect(() => {
     return () => {
@@ -167,9 +231,9 @@ const fetchMetrics = async () => {
         <h1>Content Monitor</h1>
         <nav>
           <ul>
-            <li><Link href="/reddit-authenticated">Reddit (Login)</Link></li>
+          <li><Link href="/">Reddit (Login)</Link></li>
             <li><Link href="/reddit-original">Reddit</Link></li>
-            <li><a href="#Twitter">Twitter</a></li>
+            <li><Link href="/twitter">Twitter</Link></li>
           </ul>
         </nav>
       </header>
@@ -214,6 +278,9 @@ const fetchMetrics = async () => {
           ))}
           <button type="button" onClick={addUrlField}>Add URL</button>
           <button type="submit">Start Monitoring</button>
+          <p>Post data can be updated automatically in backend. Press the button to read the latest metrics data.</p>
+          <button type="button" onClick={handleFetchLatestMetrics}>Fetch Latest Metrics</button> 
+
         </form>
 
         {urls.map((url, index) => (
@@ -234,13 +301,14 @@ const fetchMetrics = async () => {
                 {metrics && metrics.find(m => m.postID === postDetails[url].post_id) ? (
                   <div>
                     <h3>Metrics</h3>
+                    <p><strong>Time of scraping:</strong> {metrics.find(m => m.postID === postDetails[url].post_id).scrapeTime}</p>
                     <p><strong>Views:</strong> {metrics.find(m => m.postID === postDetails[url].post_id).numViews}</p>
                     <p><strong>Upvotes:</strong> {metrics.find(m => m.postID === postDetails[url].post_id).numUpvotes}</p>
                     <p><strong>Comments:</strong> {metrics.find(m => m.postID === postDetails[url].post_id).numComments}</p>
                     <p><strong>XPosts:</strong> {metrics.find(m => m.postID === postDetails[url].post_id).numXPosts}</p>
                   </div>
                 ) : (
-                  <p style={color = "red"}>This post may not be created by this user.</p>
+                  <p>This post may not be created by this user.</p>
                 )}
               </div>
             )}
@@ -248,6 +316,24 @@ const fetchMetrics = async () => {
             {!isValidUrls[index] && <div className="error">Invalid URL. Please enter a valid post URL.</div>}
           </div>
         ))}
+
+      <div>
+        <h2>Download Data</h2>
+        <label htmlFor="downloadUsername">Enter Username to Download Data:</label>
+        <input
+          type="text"
+          id="downloadUsername"
+          name="downloadUsername"
+          value={downloadUsername || ''}
+          onChange={(e) => setDownloadUsername(e.target.value)}
+          required
+        />
+        <button type="button" onClick={() => handleDownload(downloadUsername)}>Download Data</button>
+      </div>
+      <div>
+        <h2>Download All Data</h2>
+        <button type="button" onClick={() => handleDownloadAll()}>Download All Data</button>
+      </div>
 
       </main>
       <footer className="footer">

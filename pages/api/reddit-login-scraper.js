@@ -4,6 +4,7 @@ import fs from 'fs';
 import cron from 'node-cron';
 import { DateTime } from 'luxon'; 
 import randomUseragent from 'random-useragent';
+import { TrustedAdvisor } from 'aws-sdk';
 
 const credentialsFilePath = path.resolve('./data/reddit-credentials.json');
 
@@ -67,12 +68,12 @@ const scrapeDataForUser = async (username, password, callback) => {
     // console.log('Navigating to user submitted page');
     await page.goto(`https://www.reddit.com/user/${username}/submitted/`,{ waitUntil: 'networkidle' });
 
-    // await page.screenshot({ path: 'profile.png' });
+    await page.screenshot({ path: 'profile.png' });
 
     const trackersSelector = '#main-content faceplate-tracker[source="post_insights"][action="view"][noun="aggregate_stats"]';
 
     const trackerElements = await page.$$(trackersSelector);
-    // console.log('Found Tracker');
+    console.log('Found Tracker');
     
     const postsData = [];
 
