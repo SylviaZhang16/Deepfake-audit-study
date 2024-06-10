@@ -134,8 +134,8 @@ export default function Twitter() {
         <h1>Content Monitor</h1>
         <nav>
           <ul>
-            <li><Link href="/">Reddit (Login)</Link></li>
-            <li><Link href="/reddit-original">Reddit</Link></li>
+            <li><Link href="/">Reddit</Link></li>
+          
             <li><Link href="/twitter">Twitter</Link></li>
           </ul>
         </nav>
