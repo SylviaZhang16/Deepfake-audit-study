@@ -4,7 +4,6 @@ import fs from 'fs';
 import cron from 'node-cron';
 import { DateTime } from 'luxon';
 import randomUseragent from 'random-useragent';
-import { TrustedAdvisor } from 'aws-sdk';
 
 const credentialsFilePath = path.resolve('./data/reddit-credentials.json');
 
@@ -16,11 +15,20 @@ const readCredentials = () => {
   return [];
 };
 
-const saveCredentials = (credentials) => {
-  fs.writeFileSync(credentialsFilePath, JSON.stringify(credentials, null, 2));
+const saveCredentials = (newCredentials) => {
+  let existingCredentials = [];
+  if (fs.existsSync(credentialsFilePath)) {
+    const data = fs.readFileSync(credentialsFilePath, 'utf8');
+    existingCredentials = JSON.parse(data);
+  }
+  const updatedCredentials = [...existingCredentials, ...newCredentials.filter(newCred => 
+    !existingCredentials.some(existingCred => existingCred.username === newCred.username)
+  )];
+  fs.writeFileSync(credentialsFilePath, JSON.stringify(updatedCredentials, null, 2));
 };
 
-const scrapeDataForUser = async (username, password, urls, callback) => {
+
+const scrapeDataForUser = async (username, password, callback) => {
   try {
     const useragent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36';
     const browser = await chromium.launch({
@@ -61,23 +69,21 @@ const scrapeDataForUser = async (username, password, urls, callback) => {
 
     // await page.screenshot({ path: 'beforenavigation_login.png' });
 
-    // await page.waitForNavigation({ timeout: 30000});
-    await page.waitForTimeout(5000);
+    await page.waitForTimeout(3000);
+    console.log('Navigating to user profile');
 
     // await page.screenshot({ path: 'after_login.png' });
+ 
+    await page.goto(`https://www.reddit.com/user/${username}/submitted/`, { waitUntil: 'networkidle' });
 
-    // console.log('Navigating to user submitted page');
-    for (const url of urls) {
-      await page.goto(url, { waitUntil: 'networkidle' });
+    // await page.screenshot({ path: 'profile.png' });
 
-      await page.screenshot({ path: 'profile.png' });
+    const trackersSelector = '#main-content faceplate-tracker[source="post_insights"][action="view"][noun="aggregate_stats"]';
 
-      const trackersSelector = '#main-content faceplate-tracker[source="post_insights"][action="view"][noun="aggregate_stats"]';
+    const trackerElements = await page.$$(trackersSelector);
+    console.log('Found Tracker');
 
-      const trackerElements = await page.$$(trackersSelector);
-      console.log('Found Tracker');
-
-      const postsData = [];
+    const postsData = [];
 
       for (const trackerElement of trackerElements) {
         try {
@@ -150,7 +156,7 @@ const scrapeDataForUser = async (username, password, urls, callback) => {
 
       fs.writeFileSync(filePath, JSON.stringify(mergedMetrics, null, 2));
       if (callback) callback(null, mergedMetrics);
-    }
+
     await browser.close();
   } catch (err) {
     console.error('Error scraping data for user:', err);
@@ -160,8 +166,8 @@ const scrapeDataForUser = async (username, password, urls, callback) => {
 
 const scrapeData = () => {
   const credentials = readCredentials();
-  credentials.forEach(({ username, password, urls }) => {
-    scrapeDataForUser(username, password, urls, (err, metrics) => {
+  credentials.forEach(({ username, password }) => {
+    scrapeDataForUser(username, password, (err, metrics) => {
       if (!err) {
         const filePath = path.resolve(`./data/reddit/${username}.json`);
         fs.writeFileSync(filePath, JSON.stringify(metrics, null, 2));
@@ -186,11 +192,13 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Credentials are required' });
   }
 
+  saveCredentials(credentials);
+
   try {
     const results = await Promise.all(
-      credentials.map(({ username, password, urls }) =>
+      credentials.map(({ username, password }) =>
         new Promise((resolve, reject) => {
-          scrapeDataForUser(username, password, urls, (err, metrics) => {
+          scrapeDataForUser(username, password, (err, metrics) => {
             if (err) {
               return reject(err);
             }
@@ -205,3 +213,4 @@ export default async function handler(req, res) {
     res.status(500).json({ error: 'Failed to fetch metrics', details: err.message });
   }
 }
+
