@@ -32,7 +32,7 @@ const scrapeDataForUser = async (username, password, callback) => {
   try {
     const useragent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36';
     const browser = await chromium.launch({
-      headless: false,
+      headless: true,
       args: [
         '--no-sandbox',
         '--disable-setuid-sandbox',
@@ -74,7 +74,7 @@ const scrapeDataForUser = async (username, password, callback) => {
 
     // await page.screenshot({ path: 'after_login.png' });
  
-    await page.goto(`https://www.reddit.com/user/${username}/submitted/`, { waitUntil: 'networkidle' });
+    await page.goto(`https://www.reddit.com/user/${username}/submitted/`, { waitUntil: 'networkidle',timeout: 120000 });
 
     // await page.screenshot({ path: 'profile.png' });
 
