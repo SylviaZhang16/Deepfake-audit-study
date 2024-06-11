@@ -226,6 +226,26 @@ export default function Home() {
     }
   };
 
+  const handleFileUpload = async (event) => {
+    const file = event.target.files[0];
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const json = JSON.parse(e.target.result);
+        // Ensure each group has a 'urls' array
+        json.forEach(group => {
+          if (!group.urls) {
+            group.urls = [];
+          }
+        });
+        setUserGroups(json);
+      } catch (error) {
+        console.error('Error parsing JSON:', error);
+        setError('Failed to parse JSON file');
+      }
+    };
+    reader.readAsText(file);
+  };
 
   const removeUrlField = (groupIndex, urlIndex) => {
     setUserGroups((prev) => {
@@ -234,7 +254,7 @@ export default function Home() {
       return newGroups;
     });
   };
-  
+
   const removeUserGroup = (groupIndex) => {
     setUserGroups((prev) => {
       const newGroups = [...prev];
@@ -242,7 +262,6 @@ export default function Home() {
       return newGroups;
     });
   };
-  
 
   useEffect(() => {
     return () => {
@@ -251,9 +270,6 @@ export default function Home() {
       });
     };
   }, []);
-
-
-
 
   return (
     <div className="container">
@@ -265,7 +281,7 @@ export default function Home() {
         <h1>Content Monitor</h1>
         <nav>
           <ul>
-            <li><Link href="/">Reddit (Login)</Link></li>
+            <li><Link href="/reddit-authenticated">Reddit (Login)</Link></li>
             <li><Link href="/reddit-original">Reddit</Link></li>
             <li><Link href="/twitter">Twitter</Link></li>
           </ul>
@@ -274,6 +290,9 @@ export default function Home() {
       <main>
         <img src="/logo.png" alt="Logo" width={200} height={200} className="logo" />
         <form onSubmit={handleSubmit}>
+          <div>
+            <input type="file" onChange={handleFileUpload} />
+          </div>
           {userGroups.map((group, groupIndex) => (
             <div key={groupIndex}>
               <p>Please enter the url of all posts created by this user at once.</p>
@@ -311,20 +330,20 @@ export default function Home() {
                     required
                     className={isValidUrls[urlIndex] ? '' : 'invalid'}
                   />
-                  <button type="button" className= 'remove' onClick={() => removeUrlField(groupIndex, urlIndex)}>Remove URL</button>
+                  <button type="button" className='remove' onClick={() => removeUrlField(groupIndex, urlIndex)}>Remove URL</button>
                 </div>
               ))}
               <button type="button" onClick={() => addUrlField(groupIndex)}>Add URL</button>
-              <button type="button" className= 'remove' onClick={() => removeUserGroup(groupIndex)}>Remove User Group</button>
-          </div>
+              <button type="button" className='remove' onClick={() => removeUserGroup(groupIndex)}>Remove User Group</button>
+            </div>
           ))}
           <button type="button" onClick={addUserGroup}>Add User Group</button>
-          <br/>
+          <br />
           <button type="submit">Start Monitoring</button>
           <p>Post data can be updated automatically in backend. Press the button to read the latest metrics data.</p>
           <button type="button" onClick={handleFetchLatestMetrics}>Fetch Latest Metrics</button>
         </form>
-  
+
         {userGroups.map((group) =>
           group.urls.map((url, index) => (
             <div key={index}>
@@ -359,7 +378,7 @@ export default function Home() {
             </div>
           ))
         )}
-  
+
         <div>
           <h2>Download Data</h2>
           <label htmlFor="downloadUsername">Enter Username to Download Data:</label>
@@ -383,4 +402,4 @@ export default function Home() {
       </footer>
     </div>
   );
-                  }  
+}
