@@ -163,28 +163,32 @@ export default function Home() {
 
   const handleFetchLatestMetrics = async () => {
     try {
-      const promises = userGroups.map(async (group) => {
-        const response = await fetch(`/api/fetch-latest-metrics?username=${group.username}`);
-        if (!response.ok) {
-          throw new Error('Network response was not ok');
-        }
-        const data = await response.json();
-        if (data.error) {
-          setError(data.error);
-          setMetrics([]);
-        } else {
-          setMetrics(data.metrics || []);
-          setError(null);
-        }
-      });
+      const allMetrics = await Promise.all(
+        userGroups.map(async (group) => {
+          const response = await fetch(`/api/fetch-latest-metrics?username=${group.username}`);
+          if (!response.ok) {
+            throw new Error('Network response was not ok');
+          }
+          const data = await response.json();
+          if (data.error) {
+            setError((prev) => ({ ...prev, [group.username]: data.error }));
+            return null;
+          } else {
+            setError((prev) => ({ ...prev, [group.username]: null }));
+            return data.metrics || [];
+          }
+        })
+      );
 
-      await Promise.all(promises);
+      const combinedMetrics = allMetrics.flat().filter(Boolean);
+      setMetrics(combinedMetrics);
     } catch (error) {
       console.error('Error fetching latest metrics:', error);
       setError('Failed to fetch latest metrics');
       setMetrics([]);
     }
   };
+  
 
   const handleDownload = async (username) => {
     try {

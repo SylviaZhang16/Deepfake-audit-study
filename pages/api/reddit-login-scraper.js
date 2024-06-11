@@ -48,10 +48,14 @@ const scrapeDataForUser = async (username, password, callback) => {
     const context = await browser.newContext({
       viewport: { width: 1920, height: 1080 },
       userAgent: useragent,
+      javaScriptEnabled: true
     });
+    await context.clearCookies();
+    await context.clearPermissions();
+
     const page = await context.newPage();
 
-    await page.goto('https://www.reddit.com/login/', { waitUntil: 'networkidle' });
+    await page.goto('https://old.reddit.com/r/help/login/', { waitUntil: 'networkidle' });
 
     // await page.screenshot({ path: 'before_login.png' });
 
@@ -178,7 +182,7 @@ const scrapeData = () => {
   });
 };
 
-cron.schedule('*/10 * * * *', scrapeData);
+cron.schedule('*/30 * * * *', scrapeData);
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
