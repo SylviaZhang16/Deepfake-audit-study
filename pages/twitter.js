@@ -37,7 +37,6 @@ export default function Twitter() {
       return newIsValidUrls;
     });
 
-    // Skipping the fetch post details part as requested
     return true;
   };
 

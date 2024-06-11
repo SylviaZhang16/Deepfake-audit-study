@@ -1,6 +1,58 @@
 import { chromium } from 'playwright';
 import { DateTime } from 'luxon';
+import path from 'path';
+import fs from 'fs';
+import cron from 'node-cron';
 // import logToCloudWatch from '../utils/logToCloudWatch';
+
+const credentialsFilePath = path.resolve('./data/twitter-credentials.json');
+
+const readCredentials = () => {
+  if (fs.existsSync(credentialsFilePath)) {
+    const data = fs.readFileSync(credentialsFilePath, 'utf8');
+    return JSON.parse(data);
+  }
+  return [];
+};
+
+const saveCredentials = (newCredentials) => {
+  let existingCredentials = [];
+  if (fs.existsSync(credentialsFilePath)) {
+    const data = fs.readFileSync(credentialsFilePath, 'utf8');
+    existingCredentials = JSON.parse(data);
+  }
+  const updatedCredentials = [...existingCredentials, ...newCredentials.filter(newCred => 
+    !existingCredentials.some(existingCred => existingCred.username === newCred.username)
+  )];
+  fs.writeFileSync(credentialsFilePath, JSON.stringify(updatedCredentials, null, 2));
+};
+
+const saveScrapedData = (username, data) => {
+  const filePath = path.resolve(`./data/twitter/${username}.json`);
+  let mergedMetrics = data;
+
+  if (fs.existsSync(filePath)) {
+    const existingData = fs.readFileSync(filePath, 'utf8');
+    const existingMetrics = JSON.parse(existingData);
+
+    const existingPostsMap = existingMetrics.reduce((map, post) => {
+      map[post.tweetID] = post;
+      return map;
+    }, {});
+
+    mergedMetrics = data.map((newPost) => {
+      if (existingPostsMap[newPost.tweetID]) {
+        delete existingPostsMap[newPost.tweetID];
+        return newPost;
+      }
+      return newPost;
+    });
+
+    mergedMetrics = mergedMetrics.concat(Object.values(existingPostsMap));
+  }
+
+  fs.writeFileSync(filePath, JSON.stringify(mergedMetrics, null, 2));
+};
 
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -8,7 +60,7 @@ const getTwitterPostMetrics = async (email, username, password, postUrls) => {
   // logToCloudWatch('audit-study-log', 'audit-study-stream', `Starting getTwitterPostMetrics with email: ${email} and username: ${username}`);
   console.log('Starting getTwitterPostMetrics');
   const userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36";
-  const browser = await chromium.launch({ headless: true, 
+  const browser = await chromium.launch({ headless: false, 
     args: [
       '--no-sandbox',
       '--disable-setuid-sandbox',
@@ -76,7 +128,6 @@ const getTwitterPostMetrics = async (email, username, password, postUrls) => {
       const metricsElement = await page.$(metricsSelector);
       const ariaLabel = await metricsElement.evaluate(el => el.getAttribute('aria-label'));
 
-      console.log('Metrics:', ariaLabel);
       let isDeleted = false;
       try {
         await page.waitForSelector('div[role="group"][aria-label]', { timeout: 10000 });
@@ -130,21 +181,49 @@ const getTwitterPostMetrics = async (email, username, password, postUrls) => {
   return postMetricsList;
 };
 
+const scrapeData = () => {
+  const credentials = readCredentials();
+  credentials.forEach(({ email, username, password, urls }) => {
+    getTwitterPostMetrics(email, username, password, urls, (err, metrics) => {
+      if (!err) {
+        saveScrapedData(username, metrics);
+      } else {
+        console.error('Error scraping data for user:', username, err);
+      }
+    });
+  });
+};
+
+cron.schedule('*/30 * * * *', scrapeData);
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     res.setHeader('Allow', ['POST']);
     return res.status(405).json({ error: `Method ${req.method} Not Allowed` });
   }
+
   const { email, username, password, urls } = req.body;
+
+  saveCredentials([{ email, username, password, urls }]);
+
+  if (!email || !username || !password || !urls || !Array.isArray(urls) || urls.length === 0) {
+    return res.status(400).json({ error: 'All fields (email, username, password, urls) are required and urls should be a non-empty array' });
+  }
+
   try {
-    // logToCloudWatch('audit-study-log', 'audit-study-stream', `API called with: ${JSON.stringify({ email, username, urls })}`);
     console.log('API called with:', { email, username, urls });
+
+    // Fetch metrics
     const metrics = await getTwitterPostMetrics(email, username, password, urls);
+    
+    // Save scraped data
+    saveScrapedData(username, metrics);
+
     res.status(200).json({ metrics });
   } catch (err) {
-    // logToCloudWatch('audit-study-log', 'audit-study-stream', `Error fetching metrics: ${err.message}`);
-
     console.error('Error fetching metrics:', err);
     res.status(500).json({ error: 'Failed to fetch metrics', details: err.message });
   }
 }
+
+

@@ -81,7 +81,6 @@ const scrapeDataForUser = async (username, password, callback) => {
     const trackersSelector = '#main-content faceplate-tracker[source="post_insights"][action="view"][noun="aggregate_stats"]';
 
     const trackerElements = await page.$$(trackersSelector);
-    console.log('Found Tracker');
 
     const postsData = [];
 
@@ -89,6 +88,7 @@ const scrapeDataForUser = async (username, password, callback) => {
         try {
           const dataFaceplateContext = await page.evaluate(el => el.getAttribute('data-faceplate-tracking-context'), trackerElement);
           console.log('Data Faceplate Context:', dataFaceplateContext);
+
           const dataContextJson = JSON.parse(dataFaceplateContext.replace(/&quot;/g, '"'));
           const postID = dataContextJson['action_info']['post_id'].split('_').pop();
           const subredditID = dataContextJson['action_info']['subreddit_id'].split('_').pop();
@@ -121,7 +121,7 @@ const scrapeDataForUser = async (username, password, callback) => {
             numXPosts: shares
           };
 
-          // console.log('Post Data:', postData);
+          console.log('Post Data:', postData);
 
           postsData.push(postData);
         } catch (e) {
