@@ -1,4 +1,4 @@
-import { chromium } from 'playwright';
+import { chromium, firefox, webkit } from 'playwright';
 import path from 'path';
 import fs from 'fs';
 import cron from 'node-cron';
@@ -31,7 +31,7 @@ const saveCredentials = (newCredentials) => {
 const scrapeDataForUser = async (username, password, callback) => {
   try {
     const useragent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36';
-    const browser = await chromium.launch({
+    const browser = await webkit.launch({
       headless: true,
       args: [
         '--no-sandbox',
@@ -48,7 +48,8 @@ const scrapeDataForUser = async (username, password, callback) => {
     const context = await browser.newContext({
       viewport: { width: 1920, height: 1080 },
       userAgent: useragent,
-      javaScriptEnabled: true
+      javaScriptEnabled: true,
+      extensions: []
     });
     await context.clearCookies();
     await context.clearPermissions();
@@ -76,7 +77,7 @@ const scrapeDataForUser = async (username, password, callback) => {
     await page.waitForTimeout(3000);
     console.log('Navigating to user profile');
 
-    // await page.screenshot({ path: 'after_login.png' });
+    await page.screenshot({ path: 'after_login.png' });
  
     await page.goto(`https://www.reddit.com/user/${username}/submitted/`, { waitUntil: 'networkidle',timeout: 120000 });
 

@@ -267,6 +267,19 @@ export default function Home() {
     });
   };
 
+  const [screenshotUrl, setScreenshotUrl] = useState('');
+
+  const handleShowScreenshot = async () => {
+    const response = await fetch('/api/screenshot');
+    if (response.ok) {
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      setScreenshotUrl(url);
+    } else {
+      console.error('Failed to fetch screenshot');
+    }
+  };
+
   useEffect(() => {
     return () => {
       Object.keys(intervalRefs.current).forEach((url) => {
@@ -400,6 +413,11 @@ export default function Home() {
           <h2>Download All Data</h2>
           <button type="button" onClick={handleDownloadAll}>Download All Data</button>
         </div>
+        <div>
+          <br />
+      <button onClick={handleShowScreenshot}>Debug: Show After-Login Screenshot</button>
+      {screenshotUrl && <img src={screenshotUrl} alt="After Login Screenshot" />}
+    </div>
       </main>
       <footer className="footer">
         <p>&copy; 2024 </p>
