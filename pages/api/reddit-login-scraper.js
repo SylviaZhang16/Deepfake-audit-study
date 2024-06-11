@@ -70,7 +70,7 @@ const scrapeDataForUser = async (username, password, callback) => {
         await page.keyboard.press('Enter');
         await page.waitForTimeout(3000);
 
-        await page.goto('https://www.reddit.com/user/${username}/submitted/', { waitUntil: 'networkidle' });
+        await page.goto('https://www.reddit.com/user/${username}/submitted/', { waitUntil: 'networkidle', timeout: 120000});
 
         const trackersSelector = '#main-content faceplate-tracker[source="post_insights"][action="view"][noun="aggregate_stats"]';
 
