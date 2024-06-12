@@ -376,6 +376,7 @@ export default function Home() {
                   <p><strong>Created:</strong> {new Date(postDetails[url].created_utc * 1000).toLocaleString()}</p>
                   <p><strong>Subreddit:</strong> {postDetails[url].subreddit}</p>
                   <p><strong>Status:</strong> {postDetails[url].is_deleted ? 'Deleted or Removed by a Moderator' : 'Available'}</p>
+                  <p><strong>DeletedTime:</strong> {postDetails[url].deleted_time}</p>
                   {loading && <p>Loading metrics...</p>}
                   {metrics && metrics.find(m => m.postID === postDetails[url].post_id) ? (
                     <div>
