@@ -230,6 +230,26 @@ export default function Home() {
     }
   };
 
+  const handleDownloadBackupFiles = async () => {
+    try {
+      const response = await fetch('/api/download-backup-files');
+      if (!response.ok) {
+        throw new Error('Network response was not ok');
+      }
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'reddit-deleted.zip';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    } catch (error) {
+      console.error('Error downloading files:', error);
+      setError('Failed to download files');
+    }
+  };
+
   const handleFileUpload = async (event) => {
     const file = event.target.files[0];
     const reader = new FileReader();
@@ -414,8 +434,13 @@ export default function Home() {
           <h2>Download All Data</h2>
           <button type="button" onClick={handleDownloadAll}>Download All Data</button>
         </div>
+        <br />
+        <div>
+      <button onClick={handleDownloadBackupFiles}>Download Backup Files (from reddit API with deleted time)</button>
+    </div>
         <div>
           <br />
+          <h2>Debug</h2>
       <button onClick={handleShowScreenshot}>Debug: Show After-Login Screenshot</button>
       {screenshotUrl && <img src={screenshotUrl} alt="After Login Screenshot" />}
     </div>
