@@ -2,12 +2,13 @@ import Snoowrap from 'snoowrap';
 import { DateTime } from 'luxon';
 import fs from 'fs';
 import path from 'path';
+import sendPushNotification from '../utils/sendPushNotifications';
 
 const r = new Snoowrap({
-    userAgent: 'ddd',   
-    clientId: 'wwid93PKEjyWSGOZ_d7qoA',   
-    clientSecret: 'g7b4U3Ufw1JyLvSuarJtsvuqzPrZJw',   
-    refreshToken: '103191020185632-33fnsu5dr1uwZTzOEXqgZoXYMKZb-g',
+  userAgent: 'ddd',
+  clientId: 'wwid93PKEjyWSGOZ_d7qoA',
+  clientSecret: 'g7b4U3Ufw1JyLvSuarJtsvuqzPrZJw',
+  refreshToken: '103191020185632-33fnsu5dr1uwZTzOEXqgZoXYMKZb-g',
 });
 
 const getPostDetailsFromFile = (postId) => {
@@ -45,6 +46,7 @@ export default async function handler(req, res) {
     if (isDeleted && !currentStatus) {
       // Post is deleted for the first time
       deletedTime = DateTime.now().toISO();
+      await sendPushNotification('Post Deleted', `The post at ${url} has been deleted at ${deletedTime}.`);
     } else if (existingPostDetails && currentStatus) {
       // Post was already deleted
       deletedTime = existingPostDetails.deleted_time;
@@ -54,7 +56,7 @@ export default async function handler(req, res) {
       post_id: post.id,
       title: post.title,
       author: post.author.name,
-      created_utc: post.created_utc,
+      created_utc: post.created_utc, 
       subreddit: post.subreddit_name_prefixed,
       is_deleted: isDeleted,
       deleted_time: deletedTime,

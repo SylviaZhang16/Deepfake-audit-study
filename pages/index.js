@@ -1,3 +1,4 @@
+// pages/index.js
 import { useState, useEffect, useRef } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
@@ -11,8 +12,12 @@ export default function Home() {
   const [metrics, setMetrics] = useState(null);
   const [loading, setLoading] = useState(false);
   const [downloadUsername, setDownloadUsername] = useState('');
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [countdown, setCountdown] = useState(0); // Countdown state
+  const [interval, setIntervalTime] = useState(3600); // Interval for fetching in seconds (1 hour default)
 
   const intervalRefs = useRef({});
+  const countdownIntervalRef = useRef(null);
 
   const validateUrl = (url) => url.includes('.com');
 
@@ -71,6 +76,23 @@ export default function Home() {
     }
   };
 
+  const startMonitoring = (url, index) => {
+    if (intervalRefs.current[url]) {
+      clearInterval(intervalRefs.current[url]);
+    }
+
+    intervalRefs.current[url] = setInterval(async () => {
+      const isPostAvailable = await checkPostStatus(url, index);
+      if (!isPostAvailable) {
+        setLogs((prev) => ({
+          ...prev,
+          [url]: (prev[url] || '') + 'The post has been deleted or removed by a moderator.\n',
+        }));
+        clearInterval(intervalRefs.current[url]);
+      }
+    }, 10000);
+  };
+
   const handleSubmit = async (event) => {
     event.preventDefault();
     userGroups.forEach((group, groupIndex) => {
@@ -83,22 +105,7 @@ export default function Home() {
           return;
         }
 
-        setLogs((prev) => ({ ...prev, [url]: 'Monitoring started...\n' }));
-
-        if (intervalRefs.current[url]) {
-          clearInterval(intervalRefs.current[url]);
-        }
-
-        intervalRefs.current[url] = setInterval(async () => {
-          const isPostAvailable = await checkPostStatus(url, index);
-          if (!isPostAvailable) {
-            setLogs((prev) => ({
-              ...prev,
-              [url]: (prev[url] || '') + 'The post has been deleted or removed by a moderator.\n',
-            }));
-            clearInterval(intervalRefs.current[url]);
-          }
-        }, 10000);
+        startMonitoring(url, index);
       });
     });
   };
@@ -179,9 +186,22 @@ export default function Home() {
           }
         })
       );
-
+  
       const combinedMetrics = allMetrics.flat().filter(Boolean);
       setMetrics(combinedMetrics);
+      setCountdown(interval); // Reset countdown after fetching metrics
+  
+      // Send Pushover notification
+      await fetch('/api/send-test-push', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          title: 'Metrics Fetched',
+          message: 'The latest metrics have been fetched.',
+        }),
+      });
     } catch (error) {
       console.error('Error fetching latest metrics:', error);
       setError('Failed to fetch latest metrics');
@@ -305,8 +325,55 @@ export default function Home() {
       Object.keys(intervalRefs.current).forEach((url) => {
         clearInterval(intervalRefs.current[url]);
       });
+      if (countdownIntervalRef.current) {
+        clearInterval(countdownIntervalRef.current);
+      }
     };
   }, []);
+
+  useEffect(() => {
+    countdownIntervalRef.current = setInterval(() => {
+      setCountdown((prevCountdown) => {
+        if (prevCountdown > 0) {
+          return prevCountdown - 1;
+        } else {
+          handleFetchLatestMetrics();
+          return interval; // Reset countdown to interval value
+        }
+      });
+    }, 1000);
+
+    return () => {
+      clearInterval(countdownIntervalRef.current);
+    };
+  }, [interval]);
+
+  const formatCountdown = () => {
+    const hours = Math.floor(countdown / 3600);
+    const minutes = Math.floor((countdown % 3600) / 60);
+    const seconds = countdown % 60;
+    return `${hours}h ${minutes}m ${seconds}s`;
+  };
+
+  const handleSendTestPush = async () => {
+    try {
+      const response = await fetch('/api/send-test-push', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to send test push notification');
+      }
+
+      alert('Test push notification sent successfully!');
+    } catch (error) {
+      console.error('Error sending test push notification:', error);
+      alert('Failed to send test push notification');
+    }
+  };
 
   return (
     <div className="container">
@@ -381,40 +448,60 @@ export default function Home() {
           <button type="button" onClick={handleFetchLatestMetrics}>Fetch Latest Metrics</button>
         </form>
 
-        {userGroups.map((group) =>
-          group.urls.map((url, index) => (
-            <div key={index}>
-              <div id="log">
-                <pre>{logs[url]}</pre>
-              </div>
-              {postDetails[url] && (
-                <div className="post-details">
-                  <h2>Post Details for {url}</h2>
-                  <p><strong>Title:</strong> {postDetails[url].title}</p>
-                  <p><strong>Post ID:</strong> {postDetails[url].post_id}</p>
-                  <p><strong>Author:</strong> {postDetails[url].author}</p>
-                  <p><strong>Created:</strong> {new Date(postDetails[url].created_utc * 1000).toLocaleString()}</p>
-                  <p><strong>Subreddit:</strong> {postDetails[url].subreddit}</p>
-                  <p><strong>Status:</strong> {postDetails[url].is_deleted ? 'Deleted or Removed by a Moderator' : 'Available'}</p>
-                  <p><strong>DeletedTime:</strong> {postDetails[url].deleted_time}</p>
-                  {loading && <p>Loading metrics...</p>}
-                  {metrics && metrics.find(m => m.postID === postDetails[url].post_id) ? (
-                    <div>
-                      <h3>Metrics</h3>
-                      <p><strong>Time of scraping:</strong> {metrics.find(m => m.postID === postDetails[url].post_id).scrapeTime}</p>
-                      <p><strong>Views:</strong> {metrics.find(m => m.postID === postDetails[url].post_id).numViews}</p>
-                      <p><strong>Upvotes:</strong> {metrics.find(m => m.postID === postDetails[url].post_id).numUpvotes}</p>
-                      <p><strong>Comments:</strong> {metrics.find(m => m.postID === postDetails[url].post_id).numComments}</p>
-                      <p><strong>XPosts:</strong> {metrics.find(m => m.postID === postDetails[url].post_id).numXPosts}</p>
+        {/* Display countdown timer */}
+        <div className="countdown-timer">
+          <h2>Next fetch in: {formatCountdown()}</h2>
+        </div>
+
+        {/* Display usernames */}
+        <div className="user-list">
+          <h2>Usernames</h2>
+          <ul>
+            {userGroups.map((group, index) => (
+              <li key={index}>
+                <button onClick={() => setSelectedUser(group.username)}>{group.username}</button>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        {/* Display selected user's post details */}
+        {selectedUser && (
+          <div className="user-details">
+            <h2>Post Details for {selectedUser}</h2>
+            {userGroups
+              .find(group => group.username === selectedUser)
+              ?.urls.map((url, index) => (
+                <div key={index}>
+                  {postDetails[url] && (
+                    <div className="post-details">
+                      <h2>Post Details for {url}</h2>
+                      <p><strong>Title:</strong> {postDetails[url].title}</p>
+                      <p><strong>Post ID:</strong> {postDetails[url].post_id}</p>
+                      <p><strong>Author:</strong> {postDetails[url].author}</p>
+                      <p><strong>Created:</strong> {new Date(postDetails[url].created_utc * 1000).toLocaleString()}</p>
+                      <p><strong>Subreddit:</strong> {postDetails[url].subreddit}</p>
+                      <p><strong>Status:</strong> {postDetails[url].is_deleted ? 'Deleted or Removed by a Moderator' : 'Available'}</p>
+                      <p><strong>DeletedTime:</strong> {postDetails[url].deleted_time}</p>
+                      {loading && <p>Loading metrics...</p>}
+                      {metrics && metrics.find(m => m.postID === postDetails[url].post_id) ? (
+                        <div>
+                          <h3>Metrics</h3>
+                          <p><strong>Time of scraping:</strong> {metrics.find(m => m.postID === postDetails[url].post_id).scrapeTime}</p>
+                          <p><strong>Views:</strong> {metrics.find(m => m.postID === postDetails[url].post_id).numViews}</p>
+                          <p><strong>Upvotes:</strong> {metrics.find(m => m.postID === postDetails[url].post_id).numUpvotes}</p>
+                          <p><strong>Comments:</strong> {metrics.find(m => m.postID === postDetails[url].post_id).numComments}</p>
+                          <p><strong>XPosts:</strong> {metrics.find(m => m.postID === postDetails[url].post_id).numXPosts}</p>
+                        </div>
+                      ) : (
+                        <p>This post may not be created by this user.</p>
+                      )}
                     </div>
-                  ) : (
-                    <p>This post may not be created by this user.</p>
                   )}
+                  {!isValidUrls[index] && <div className="error">Invalid URL. Please enter a valid post URL.</div>}
                 </div>
-              )}
-              {!isValidUrls[index] && <div className="error">Invalid URL. Please enter a valid post URL.</div>}
-            </div>
-          ))
+              ))}
+          </div>
         )}
 
         <div>
@@ -436,17 +523,23 @@ export default function Home() {
         </div>
         <br />
         <div>
-      <button onClick={handleDownloadBackupFiles}>Download Backup Files (from reddit API with deleted time)</button>
-    </div>
+          <button onClick={handleDownloadBackupFiles}>Download Backup Files (from reddit API with deleted time)</button>
+        </div>
         <div>
           <br />
           <h2>Debug</h2>
-      <button onClick={handleShowScreenshot}>Debug: Show After-Login Screenshot</button>
-      {screenshotUrl && <img src={screenshotUrl} alt="After Login Screenshot" />}
-    </div>
+          <button onClick={handleShowScreenshot}>Debug: Show After-Login Screenshot</button>
+          {screenshotUrl && <img src={screenshotUrl} alt="After Login Screenshot" />}
+        </div>
+
+        {/* Test push notification button */}
+        <div>
+          <h2>Send Test Push Notification</h2>
+          <button onClick={handleSendTestPush}>Send Test Push Notification</button>
+        </div>
       </main>
       <footer className="footer">
-        <p>&copy; 2024 </p>
+        <p>&copy; 2024</p>
       </footer>
     </div>
   );
