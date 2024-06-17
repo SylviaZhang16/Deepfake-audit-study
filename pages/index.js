@@ -96,7 +96,7 @@ export default function Home() {
   const handleSubmit = async (event) => {
     event.preventDefault();
     userGroups.forEach((group, groupIndex) => {
-      fetchMetrics(group.username, group.password);
+      fetchMetrics(group.username, group.password, group.urls);
 
       group.urls.forEach((url, index) => {
         const isPostAvailable = checkPostStatus(url, index);
@@ -110,14 +110,14 @@ export default function Home() {
     });
   };
 
-  const fetchMetrics = async (username, password) => {
+  const fetchMetrics = async (username, password, urls) => {
     try {
       const response = await fetch('/api/reddit-login-scraper', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify([{ username, password }]),
+        body: JSON.stringify([{ username, password, urls }]),
       });
 
       if (!response.ok) {
@@ -192,16 +192,16 @@ export default function Home() {
       setCountdown(interval); // Reset countdown after fetching metrics
   
       // Send Pushover notification
-      await fetch('/api/send-test-push', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          title: 'Metrics Fetched',
-          message: 'The latest metrics have been fetched.',
-        }),
-      });
+      // await fetch('/api/send-test-push', {
+      //   method: 'POST',
+      //   headers: {
+      //     'Content-Type': 'application/json',
+      //   },
+      //   body: JSON.stringify({
+      //     title: 'Metrics Fetched',
+      //     message: 'The latest metrics have been fetched.',
+      //   }),
+      // });
     } catch (error) {
       console.error('Error fetching latest metrics:', error);
       setError('Failed to fetch latest metrics');

@@ -2,7 +2,7 @@ import Snoowrap from 'snoowrap';
 import { DateTime } from 'luxon';
 import fs from 'fs';
 import path from 'path';
-import sendPushNotification from '../utils/sendPushNotifications';
+// import sendPushNotification from '../utils/sendPushNotifications';
 
 const r = new Snoowrap({
   userAgent: 'ddd',
@@ -46,7 +46,7 @@ export default async function handler(req, res) {
     if (isDeleted && !currentStatus) {
       // Post is deleted for the first time
       deletedTime = DateTime.now().toISO();
-      await sendPushNotification('Post Deleted', `The post at ${url} has been deleted at ${deletedTime}.`);
+      // await sendPushNotification('Post Deleted', `The post at ${url} has been deleted at ${deletedTime}.`);
     } else if (existingPostDetails && currentStatus) {
       // Post was already deleted
       deletedTime = existingPostDetails.deleted_time;
