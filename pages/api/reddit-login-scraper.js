@@ -67,17 +67,17 @@ export default async function handler(req, res) {
     // );
     // res.status(200).json({ metrics: results });
 
-    exec('node ./pages/api/background-job.mjs', (error, stdout, stderr) => {
-      if (error) {
-        console.error(`Error starting background job: ${error.message}`);
-        return;
-      }
-      if (stderr) {
-        console.error(`Background job stderr: ${stderr}`);
-        return;
-      }
-      console.log(`Background job stdout: ${stdout}`);
-    });
+    // exec('node ./pages/api/background-job.mjs', (error, stdout, stderr) => {
+    //   if (error) {
+    //     console.error(`Error starting background job: ${error.message}`);
+    //     return;
+    //   }
+    //   if (stderr) {
+    //     console.error(`Background job stderr: ${stderr}`);
+    //     return;
+    //   }
+    //   console.log(`Background job stdout: ${stdout}`);
+    // });
 
   } catch (err) {
     console.error('Failed to fetch metrics:', err);
