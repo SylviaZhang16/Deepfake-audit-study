@@ -31,16 +31,16 @@ const saveCredentials = (newCredentials) => {
 const scrapeDataForUser = async (username, password, callback) => {
   try {
     const useragent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36';
-    const browser = await webkit.launch({
-      headless: true,
+    const browser = await chromium.launch({
+      headless: false,
       args: [
-        // '--no-sandbox',
-        // '--disable-setuid-sandbox',
-        // '--disable-dev-shm-usage',
-        // '--disable-accelerated-2d-canvas',
-        // '--disable-gpu',
-        // '--no-zygote',
-        // '--disable-software-rasterizer'
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage',
+        '--disable-accelerated-2d-canvas',
+        '--disable-gpu',
+        '--no-zygote',
+        '--disable-software-rasterizer'
       ]
     });
 
@@ -56,7 +56,8 @@ const scrapeDataForUser = async (username, password, callback) => {
 
     const page = await context.newPage();
 
-    await page.goto('https://old.reddit.com/r/help/login/', { waitUntil: 'networkidle' });
+    // await page.goto('https://old.reddit.com/r/help/login/', { waitUntil: 'networkidle' });
+    await page.goto('https://www.reddit.com/login/', { waitUntil: 'networkidle' });
 
     // await page.screenshot({ path: 'before_login.png' });
 
@@ -77,7 +78,7 @@ const scrapeDataForUser = async (username, password, callback) => {
     await page.waitForTimeout(3000);
     console.log('Navigating to user profile');
 
-    await page.screenshot({ path: 'after_login.png' });
+    // await page.screenshot({ path: 'after_login.png' });
  
     await page.goto(`https://www.reddit.com/user/${username}/submitted/`, { waitUntil: 'networkidle',timeout: 120000 });
 
